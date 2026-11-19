@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, WifiOff } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { Lock, Mail, ArrowRight, WifiOff, AlertCircle } from 'lucide-react';
+import { getSupabaseClient, checkSupabaseConfigStatus } from '@/lib/supabaseClient';
 import { DayOneLogo } from './DayOneLogo';
 
 interface LoginPageProps {
@@ -22,6 +22,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
+  const configStatus = checkSupabaseConfigStatus();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -29,7 +31,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     const client = getSupabaseClient();
     if (!client) {
-      setErrorMsg('Supabase client not initialized. Check your credentials in .env.local');
+      setErrorMsg(
+        'Supabase cloud URL is unconfigured or set to placeholder (your-project-id). Click "Continue in Local Mode" below to use DayOne immediately without login, or update NEXT_PUBLIC_SUPABASE_URL in your hosting settings.'
+      );
       return;
     }
 
@@ -71,7 +75,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
-      setErrorMsg(err.message || 'Authentication failed. Please check credentials.');
+      const isFetchError =
+        err?.message?.includes('Failed to fetch') ||
+        err?.message?.includes('NetworkError') ||
+        err?.name === 'AuthRetryableFetchError';
+
+      if (isFetchError) {
+        setErrorMsg(
+          'Unable to reach Supabase server. Check your network or verify NEXT_PUBLIC_SUPABASE_URL in your hosting settings. You can also click "Continue in Local Mode" below.'
+        );
+      } else {
+        setErrorMsg(err.message || 'Authentication failed. Please check credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +109,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             Gentle Pediatric Health & Growth Records
           </p>
         </div>
+
+        {/* Placeholder / Unconfigured Notice */}
+        {configStatus.isPlaceholder && (
+          <div className="mb-4 p-3 rounded-xl bg-[#FFF7F2] dark:bg-[#2A1E1C] border border-[#FCDCCB] dark:border-[#523A34] text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-semibold text-[#E2765A]">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Placeholder URL Detected</span>
+            </div>
+            <p className="text-[11px] text-[#75706B] dark:text-[#A8A29E] leading-relaxed">
+              Your hosting environment is currently set to <code className="px-1 py-0.5 rounded bg-[#F2ECE3] dark:bg-[#342724] text-[10px]">your-project-id.supabase.co</code>.
+            </p>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={onContinueOffline}
+                className="w-full py-1.5 px-2 rounded-lg bg-[#E2765A] hover:bg-[#CB6145] text-white text-[11px] font-semibold text-center transition-colors"
+              >
+                Continue in Local Mode (Works Offline)
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Tab: Sign In vs Sign Up */}
         <div className="flex p-1 rounded-full bg-[#F2ECE3] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] mb-5 text-xs font-semibold">
@@ -131,13 +168,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         {/* Alerts */}
         {errorMsg && (
-          <div className="mb-4 p-2.5 rounded-xl bg-[#FDF0F2] border border-[#F8D0D6] text-[#8A2338] dark:bg-[#2B171A] dark:border-[#4D2329] dark:text-[#F1ABB6] text-xs font-medium">
+          <div className="mb-4 p-2.5 rounded-xl bg-[#FDF0F2] border border-[#F8D0D6] text-[#8A2338] dark:bg-[#2B171A] dark:border-[#4D2329] dark:text-[#F1ABB6] text-xs font-medium leading-relaxed">
             {errorMsg}
           </div>
         )}
 
         {infoMsg && (
-          <div className="mb-4 p-2.5 rounded-xl bg-[#EDF5EE] border border-[#CFE2D1] text-[#23522A] dark:bg-[#1A2E1F] dark:border-[#2D4A33] dark:text-[#AECDB2] text-xs font-medium">
+          <div className="mb-4 p-2.5 rounded-xl bg-[#EDF5EE] border border-[#CFE2D1] text-[#23522A] dark:bg-[#1A2E1F] dark:border-[#2D4A33] dark:text-[#AECDB2] text-xs font-medium leading-relaxed">
             {infoMsg}
           </div>
         )}
@@ -191,7 +228,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 px-3 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-50 shadow-xs"
+            className="w-full py-2.5 px-3 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
           >
             <span>{isLoading ? 'Processing...' : useMagicLink ? 'Send Magic Link' : isSignUp ? 'Create Account' : 'Sign In'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -201,15 +238,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         {/* Offline / Guest Mode Fallback */}
         <div className="mt-5 pt-4 border-t border-[#EAE6DF] dark:border-[#2D2B33] text-center space-y-2">
           <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-            Offline or in clinic without signal?
+            Want to use DayOne without creating a cloud account?
           </p>
           <button
             type="button"
             onClick={onContinueOffline}
-            className="w-full py-2 px-3 rounded-xl font-semibold text-xs bg-[#FAF8F5] dark:bg-[#17161B] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] text-[#4D4845] dark:text-[#DDD8D0] border border-[#EAE6DF] dark:border-[#2D2B33] transition-colors duration-150 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            className="w-full py-2 px-3 rounded-xl font-semibold text-xs bg-[#FAF8F5] dark:bg-[#17161B] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] text-[#4D4845] dark:text-[#DDD8D0] border border-[#EAE6DF] dark:border-[#2D2B33] transition-colors duration-150 flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
           >
             <WifiOff className="w-3.5 h-3.5 text-[#E2765A]" />
-            <span>Continue in Local Mode</span>
+            <span>Continue in Local Mode (Offline)</span>
           </button>
         </div>
 

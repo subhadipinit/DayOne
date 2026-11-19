@@ -7,9 +7,70 @@ let cachedClient: ReturnType<typeof createClient> | null = null;
 let cachedUrl = '';
 let cachedKey = '';
 
+export function isValidSupabaseUrl(url?: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (
+    trimmed === '' ||
+    trimmed.includes('your-project-id') ||
+    trimmed.includes('xyzcompany') ||
+    trimmed.includes('placeholder')
+  ) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+export function isValidSupabaseKey(key?: string): boolean {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (
+    trimmed === '' ||
+    trimmed.includes('your-publishable-or-anon-key') ||
+    trimmed.includes('eyJhbGciOi...') ||
+    trimmed.length < 20
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function getResolvedSupabaseCredentials(customUrl?: string, customKey?: string) {
+  // 1. Explicit parameter
+  if (customUrl && customKey && isValidSupabaseUrl(customUrl) && isValidSupabaseKey(customKey)) {
+    return { url: customUrl.trim(), key: customKey.trim() };
+  }
+
+  // 2. Environment variables from process.env
+  if (isValidSupabaseUrl(defaultUrl) && isValidSupabaseKey(defaultKey)) {
+    return { url: defaultUrl.trim(), key: defaultKey.trim() };
+  }
+
+  // 3. Fallback from localStorage (user configured in Settings)
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('dayone_supabase_config');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (isValidSupabaseUrl(parsed.url) && isValidSupabaseKey(parsed.anonKey)) {
+          return { url: parsed.url.trim(), key: parsed.anonKey.trim() };
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  return { url: '', key: '' };
+}
+
 export function getSupabaseClient(customUrl?: string, customKey?: string) {
-  const url = customUrl || defaultUrl;
-  const key = customKey || defaultKey;
+  const { url, key } = getResolvedSupabaseCredentials(customUrl, customKey);
 
   if (!url || !key) {
     return null;
@@ -33,6 +94,23 @@ export function getSupabaseClient(customUrl?: string, customKey?: string) {
     console.error('Failed to initialize Supabase client:', err);
     return null;
   }
+}
+
+export function checkSupabaseConfigStatus(): {
+  isConfigured: boolean;
+  isPlaceholder: boolean;
+  activeUrl: string;
+} {
+  const rawUrl = defaultUrl.trim();
+  if (rawUrl.includes('your-project-id') || defaultKey.includes('your-publishable-or-anon-key')) {
+    return { isConfigured: false, isPlaceholder: true, activeUrl: rawUrl };
+  }
+  const { url } = getResolvedSupabaseCredentials();
+  return {
+    isConfigured: Boolean(url),
+    isPlaceholder: false,
+    activeUrl: url || rawUrl,
+  };
 }
 
 /**

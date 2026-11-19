@@ -138,10 +138,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full border-b backdrop-blur-md bg-[#FAF8F5]/92 dark:bg-[#141317]/92 border-[#EAE6DF] dark:border-[#2D2B33] transition-colors duration-150">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        
+
         {/* Left Section: Brand & Child Profile Switcher */}
         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-          
+
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-2.5 shrink-0 select-none">
             <DayOneLogo size={34} variant="mark" />
@@ -165,11 +165,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setIsChildMenuOpen((prev) => !prev)}
               aria-expanded={isChildMenuOpen}
               aria-haspopup="true"
-              className={`group flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full border transition-all duration-150 active:scale-[0.98] ${
-                isChildMenuOpen
-                  ? 'bg-white dark:bg-[#1D1C22] border-[#E2765A] shadow-sm ring-2 ring-[#E2765A]/15'
-                  : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D5CFCE] dark:hover:border-[#3D3B44]'
-              }`}
+              className={`group flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full border transition-all duration-150 active:scale-[0.98] ${isChildMenuOpen
+                ? 'bg-white dark:bg-[#1D1C22] border-[#E2765A] shadow-sm ring-2 ring-[#E2765A]/15'
+                : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D5CFCE] dark:hover:border-[#3D3B44]'
+                }`}
             >
               {/* Child Initial Avatar Token */}
               <div className="w-7 h-7 rounded-full bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] flex items-center justify-center shrink-0">
@@ -192,16 +191,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Chevron icon with animated rotation */}
               <ChevronDown
-                className={`w-3.5 h-3.5 text-[#75706B] dark:text-[#9E9892] group-hover:text-[#201E1D] dark:group-hover:text-[#FAF8F5] transition-transform duration-200 shrink-0 ${
-                  isChildMenuOpen ? 'rotate-180 text-[#E2765A]' : ''
-                }`}
+                className={`w-3.5 h-3.5 text-[#75706B] dark:text-[#9E9892] group-hover:text-[#201E1D] dark:group-hover:text-[#FAF8F5] transition-transform duration-200 shrink-0 ${isChildMenuOpen ? 'rotate-180 text-[#E2765A]' : ''
+                  }`}
               />
             </button>
 
             {/* Custom Child Switcher Dropdown Popover */}
             {isChildMenuOpen && (
               <div className="absolute left-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-lg shadow-black/5 dark:shadow-black/40 z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
-                
+
                 {/* Popover Header */}
                 <div className="px-4 py-3 border-b border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5]/60 dark:bg-[#17161B]/60 flex items-center justify-between">
                   <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
@@ -227,18 +225,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                           onSwitchChild(p.id);
                           setIsChildMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors duration-150 ${
-                          isSelected
-                            ? 'bg-[#FFF7F2] dark:bg-[#261E1C] text-[#201E1D] dark:text-[#FAF8F5]'
-                            : 'hover:bg-[#F7F4EE] dark:hover:bg-[#232129] text-[#4D4845] dark:text-[#DDD8D0]'
-                        }`}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors duration-150 ${isSelected
+                          ? 'bg-[#FFF7F2] dark:bg-[#261E1C] text-[#201E1D] dark:text-[#FAF8F5]'
+                          : 'hover:bg-[#F7F4EE] dark:hover:bg-[#232129] text-[#4D4845] dark:text-[#DDD8D0]'
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
-                            isSelected
-                              ? 'bg-[#FFF0E6] dark:bg-[#2D2422] border-[#FCDCCB] dark:border-[#543830] text-[#8A3510] dark:text-[#F8BCA0]'
-                              : 'bg-[#F2ECE3] dark:bg-[#26242C] border-[#EAE6DF] dark:border-[#35333C] text-[#75706B] dark:text-[#9E9892]'
-                          }`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${isSelected
+                            ? 'bg-[#FFF0E6] dark:bg-[#2D2422] border-[#FCDCCB] dark:border-[#543830] text-[#8A3510] dark:text-[#F8BCA0]'
+                            : 'bg-[#F2ECE3] dark:bg-[#26242C] border-[#EAE6DF] dark:border-[#35333C] text-[#75706B] dark:text-[#9E9892]'
+                            }`}>
                             <span className="text-xs font-bold leading-none">{pInitial}</span>
                           </div>
                           <div className="min-w-0">
@@ -300,7 +296,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Install App</span>
             </button>
           )}
-          
+
           {/* White Noise & Infant Shusher Button */}
           {onOpenShusher && (
             <button
@@ -329,11 +325,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleRole}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-150 active:scale-[0.97] ${
-              userRole === 'parent'
-                ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830]'
-                : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1] dark:bg-[#1A2E1F] dark:text-[#AECDB2] dark:border-[#2D4A33]'
-            }`}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-150 active:scale-[0.97] ${userRole === 'parent'
+              ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830]'
+              : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1] dark:bg-[#1A2E1F] dark:text-[#AECDB2] dark:border-[#2D4A33]'
+              }`}
             title={`Current View: ${userRole === 'parent' ? 'Parent (Admin - Full Edit Access)' : 'Family (Read-Only Mode)'}. Click to switch.`}
           >
             {userRole === 'parent' ? (
@@ -384,11 +379,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setIsUserMenuOpen((prev) => !prev)}
                   aria-expanded={isUserMenuOpen}
                   aria-haspopup="true"
-                  className={`flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-xl border transition-all duration-150 active:scale-[0.97] ${
-                    isUserMenuOpen
-                      ? 'bg-white dark:bg-[#1D1C22] border-[#E2765A] shadow-sm'
-                      : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33]'
-                  }`}
+                  className={`flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-xl border transition-all duration-150 active:scale-[0.97] ${isUserMenuOpen
+                    ? 'bg-white dark:bg-[#1D1C22] border-[#E2765A] shadow-sm'
+                    : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33]'
+                    }`}
                   title={`Account: ${currentUser.email}`}
                 >
                   <div className="w-6 h-6 rounded-lg bg-[#FAF0E8] dark:bg-[#271F1D] text-[#8A3510] dark:text-[#F8BCA0] flex items-center justify-center font-bold text-xs">
@@ -498,11 +492,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
                 >
                   <span className="text-[#4D4845] dark:text-[#DDD8D0]">Role Mode</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                    userRole === 'parent'
-                      ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB]'
-                      : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1]'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${userRole === 'parent'
+                    ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB]'
+                    : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1]'
+                    }`}>
                     {userRole === 'parent' ? 'Parent (Admin)' : 'Family (View)'}
                   </span>
                 </button>
