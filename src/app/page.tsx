@@ -171,7 +171,7 @@ export default function Home() {
       />
 
       {/* Primary Feature Tabs Switcher (Visible on Mobile, Tablet & Desktop) */}
-      <div className="sticky top-16 z-30 py-2.5 backdrop-blur-md bg-[#FAF8F5]/96 dark:bg-[#141317]/96 border-b border-[#EAE6DF] dark:border-[#2D2B33] transition-colors shadow-xs">
+      <div className="sticky top-14 sm:top-16 z-30 py-1.5 sm:py-2.5 backdrop-blur-md bg-[#FAF8F5]/96 dark:bg-[#141317]/96 border-b border-[#EAE6DF] dark:border-[#2D2B33] transition-colors shadow-xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div
             ref={tabScrollRef}
@@ -332,7 +332,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 pb-24 md:pb-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-3.5 sm:space-y-5 pb-24 md:pb-6">
 
         {/* Hero Banner with Precision Age Counter & Celebration Alert */}
         <HeroAgeTicker

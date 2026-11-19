@@ -417,7 +417,7 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
   const currentSoundMeta = SOUND_OPTIONS.find((s) => s.id === selectedSound)!;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-96 animate-in fade-in slide-in-from-bottom-5 duration-200">
+    <div className="fixed bottom-20 md:bottom-4 right-3 sm:right-4 z-50 max-w-sm w-[calc(100vw-1.5rem)] sm:w-96 animate-in fade-in slide-in-from-bottom-5 duration-200">
       <div className="bg-[#FAF8F5] dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
         
         {/* Header Bar */}

@@ -581,12 +581,14 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
         )}
       </div>
 
-      {/* --- EDIT / RECORD VACCINE MODAL --- */}
+      {/* --- EDIT / RECORD VACCINE MODAL (Mobile Bottom-Sheet & Desktop Centered) --- */}
       {editingVaccine && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-md my-8 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-xl">
-            
-            <h3 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border-t sm:border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+            {/* Mobile Sheet Drag Pill */}
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44] mx-auto mb-3" />
+
+            <h3 className="text-sm sm:text-base font-bold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
               Record Vaccine: {editingVaccine.name}
             </h3>
             <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">

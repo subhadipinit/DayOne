@@ -150,8 +150,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const initial = profile?.name ? profile.name.trim().charAt(0).toUpperCase() : 'B';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b backdrop-blur-md bg-[#FAF8F5]/92 dark:bg-[#141317]/92 border-[#EAE6DF] dark:border-[#2D2B33] transition-colors duration-150">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 w-full border-b backdrop-blur-md bg-[#FAF8F5]/94 dark:bg-[#141317]/94 border-[#EAE6DF] dark:border-[#2D2B33] transition-colors duration-150">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
 
         {/* Left Section: Brand & Child Profile Switcher */}
         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
@@ -373,11 +373,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Settings Button */}
+          {/* Settings Button (Desktop & Tablet) */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-[#4D4845] dark:text-[#DDD8D0] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#201E26] border border-[#EAE6DF] dark:border-[#2D2B33] transition-all duration-150 active:scale-[0.95]"
+            className="hidden sm:flex w-9 h-9 rounded-xl items-center justify-center text-[#4D4845] dark:text-[#DDD8D0] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#201E26] border border-[#EAE6DF] dark:border-[#2D2B33] transition-all duration-150 active:scale-[0.95]"
             title="App & Baby Settings"
             aria-label="Settings"
           >

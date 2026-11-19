@@ -286,52 +286,110 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
             No growth records entered yet.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] text-[11px] uppercase tracking-wider">
-                  <th className="pb-2.5 pl-2 font-medium">Date</th>
-                  <th className="pb-2.5 font-medium">Age</th>
-                  <th className="pb-2.5 font-medium">Weight (kg)</th>
-                  <th className="pb-2.5 font-medium">Length (cm)</th>
-                  <th className="pb-2.5 font-medium">Head (cm)</th>
-                  <th className="pb-2.5 font-medium">Notes</th>
-                  {userRole === 'parent' && <th className="pb-2.5 text-right pr-2 font-medium">Action</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EAE6DF] dark:divide-[#2D2B33]">
-                {growthRecords.map((r) => (
-                  <tr key={r.id} className="hover:bg-[#FAF8F5] dark:hover:bg-[#17161B] transition-colors duration-150">
-                    <td className="py-2.5 pl-2 font-medium text-[#201E1D] dark:text-[#FAF8F5]">{r.date}</td>
-                    <td className="py-2.5 text-[#75706B] dark:text-[#9E9892]">Day {r.ageInDays}</td>
-                    <td className="py-2.5 font-bold text-[#E2765A] tabular-nums">{r.weightKg.toFixed(2)}</td>
-                    <td className="py-2.5 text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.lengthCm.toFixed(1)}</td>
-                    <td className="py-2.5 text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.headCircumferenceCm.toFixed(1)}</td>
-                    <td className="py-2.5 text-[#75706B] dark:text-[#9E9892] italic max-w-xs truncate">{r.notes || '—'}</td>
+          <>
+            {/* Mobile Card List View (< sm) */}
+            <div className="sm:hidden space-y-2.5">
+              {growthRecords.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-3 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#18171C] space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                        {r.date}
+                      </span>
+                      <span className="text-[11px] text-[#75706B] dark:text-[#9E9892] ml-2">
+                        Day {r.ageInDays}
+                      </span>
+                    </div>
+
                     {userRole === 'parent' && (
-                      <td className="py-2.5 text-right pr-2">
-                        <button
-                          onClick={() => onDeleteGrowthRecord(r.id)}
-                          className="p-1 rounded-lg text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A] transition-colors duration-150"
-                          title="Delete entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+                      <button
+                        onClick={() => onDeleteGrowthRecord(r.id)}
+                        className="p-1 rounded-lg text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A] transition-colors"
+                        title="Delete entry"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
+                    <div className="p-2 rounded-lg bg-white dark:bg-[#201E26] border border-[#EAE6DF] dark:border-[#2D2B33]">
+                      <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase block font-semibold">Weight</span>
+                      <span className="text-xs font-bold text-[#E2765A] tabular-nums">{r.weightKg.toFixed(2)} kg</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-[#201E26] border border-[#EAE6DF] dark:border-[#2D2B33]">
+                      <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase block font-semibold">Length</span>
+                      <span className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.lengthCm.toFixed(1)} cm</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-[#201E26] border border-[#EAE6DF] dark:border-[#2D2B33]">
+                      <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase block font-semibold">Head</span>
+                      <span className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.headCircumferenceCm.toFixed(1)} cm</span>
+                    </div>
+                  </div>
+
+                  {r.notes && (
+                    <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] italic pt-0.5">
+                      "{r.notes}"
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= sm) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] text-[11px] uppercase tracking-wider">
+                    <th className="pb-2.5 pl-2 font-medium">Date</th>
+                    <th className="pb-2.5 font-medium">Age</th>
+                    <th className="pb-2.5 font-medium">Weight (kg)</th>
+                    <th className="pb-2.5 font-medium">Length (cm)</th>
+                    <th className="pb-2.5 font-medium">Head (cm)</th>
+                    <th className="pb-2.5 font-medium">Notes</th>
+                    {userRole === 'parent' && <th className="pb-2.5 text-right pr-2 font-medium">Action</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#EAE6DF] dark:divide-[#2D2B33]">
+                  {growthRecords.map((r) => (
+                    <tr key={r.id} className="hover:bg-[#FAF8F5] dark:hover:bg-[#17161B] transition-colors duration-150">
+                      <td className="py-2.5 pl-2 font-medium text-[#201E1D] dark:text-[#FAF8F5]">{r.date}</td>
+                      <td className="py-2.5 text-[#75706B] dark:text-[#9E9892]">Day {r.ageInDays}</td>
+                      <td className="py-2.5 font-bold text-[#E2765A] tabular-nums">{r.weightKg.toFixed(2)}</td>
+                      <td className="py-2.5 text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.lengthCm.toFixed(1)}</td>
+                      <td className="py-2.5 text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">{r.headCircumferenceCm.toFixed(1)}</td>
+                      <td className="py-2.5 text-[#75706B] dark:text-[#9E9892] italic max-w-xs truncate">{r.notes || '—'}</td>
+                      {userRole === 'parent' && (
+                        <td className="py-2.5 text-right pr-2">
+                          <button
+                            onClick={() => onDeleteGrowthRecord(r.id)}
+                            className="p-1 rounded-lg text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A] transition-colors duration-150"
+                            title="Delete entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
-      {/* --- ADD MEASUREMENT MODAL --- */}
+      {/* --- ADD MEASUREMENT MODAL (Mobile Bottom-Sheet & Desktop Centered) --- */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-md my-8 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-xl">
-            <h3 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border-t sm:border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+            {/* Mobile Sheet Drag Pill */}
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44] mx-auto mb-3" />
+
+            <h3 className="text-sm sm:text-base font-bold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
               Add Pediatric Measurement
             </h3>
             <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">
@@ -346,7 +404,7 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                   required
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] text-sm"
                 />
               </div>
 
@@ -356,11 +414,12 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                   <input
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     required
                     placeholder="3.45"
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] text-sm"
                   />
                 </div>
                 <div>
@@ -368,11 +427,12 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                   <input
                     type="number"
                     step="0.1"
+                    inputMode="decimal"
                     required
                     placeholder="51.5"
                     value={lengthCm}
                     onChange={(e) => setLengthCm(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] text-sm"
                   />
                 </div>
                 <div>
@@ -380,11 +440,12 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                   <input
                     type="number"
                     step="0.1"
+                    inputMode="decimal"
                     required
                     placeholder="35.0"
                     value={headCm}
                     onChange={(e) => setHeadCm(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] text-sm"
                   />
                 </div>
               </div>
@@ -396,7 +457,7 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                   placeholder="Doctor's comments, feeding assessment, etc."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] text-sm"
                 />
               </div>
 
@@ -404,13 +465,13 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150"
+                  className="flex-1 py-2.5 px-3 rounded-xl font-semibold border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150 active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 py-2.5 px-3 rounded-xl font-semibold bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
                 >
                   Save Measurement
                 </button>

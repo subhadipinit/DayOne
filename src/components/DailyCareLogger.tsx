@@ -514,24 +514,28 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
         )}
       </div>
 
-      {/* Bottle Feeding Modal */}
+      {/* Bottle Feeding Modal (Mobile Bottom-Sheet & Desktop Centered) */}
       {showBottleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-xl">
-            <h4 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border-t sm:border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+            {/* Mobile Sheet Drag Pill */}
+            <div className="sm:hidden w-10 h-1 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44] mx-auto mb-3" />
+
+            <h4 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] mb-2">
               Log Bottle Feed
             </h4>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-[#75706B] dark:text-[#9E9892] mb-1 font-medium">
+                <label className="block text-xs text-[#75706B] dark:text-[#9E9892] mb-1 font-semibold">
                   Volume (ml)
                 </label>
                 <input
                   type="number"
                   step="5"
+                  inputMode="numeric"
                   value={bottleMl}
                   onChange={(e) => setBottleMl(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm font-semibold bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
                 />
               </div>
 
@@ -539,14 +543,14 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowBottleModal(false)}
-                  className="flex-1 py-2 rounded-xl font-semibold text-xs border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150"
+                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150 active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveBottle}
-                  className="flex-1 py-2 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
                 >
                   Save Feed
                 </button>

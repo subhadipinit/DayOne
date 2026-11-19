@@ -229,8 +229,10 @@ export const PrescriptionVault: React.FC<PrescriptionVaultProps> = ({
 
       {/* --- ADD PRESCRIPTION MODAL --- */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-lg my-8 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-lg my-0 sm:my-8 rounded-t-3xl sm:rounded-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl p-5 sm:p-6">
+            {/* Drag indicator */}
+            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-3 sm:hidden" />
             <h3 className="text-base font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
               Add Doctor Prescription
             </h3>
@@ -359,8 +361,10 @@ export const PrescriptionVault: React.FC<PrescriptionVaultProps> = ({
 
       {/* --- PREVIEW MODAL --- */}
       {previewPrescription && previewPrescription.attachmentUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative max-w-2xl w-full max-h-[90vh] bg-white dark:bg-[#1D1C22] rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] p-4 overflow-hidden flex flex-col shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative max-w-2xl w-full max-h-[90vh] bg-white dark:bg-[#1D1C22] rounded-t-3xl sm:rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] p-4 sm:p-5 overflow-hidden flex flex-col shadow-xl">
+            {/* Drag indicator */}
+            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
             <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
               <span className="font-semibold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
                 {previewPrescription.diagnosis} ({previewPrescription.date})

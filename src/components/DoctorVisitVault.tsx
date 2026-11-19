@@ -374,8 +374,10 @@ _Sent via DayOne Baby Health Vault_`;
 
       {/* Symptom Modal */}
       {showSymptomModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl p-5">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+            {/* Drag indicator */}
+            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-3 sm:hidden" />
             <h4 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-2">
               Log Symptom / Temperature
             </h4>
@@ -397,6 +399,7 @@ _Sent via DayOne Baby Health Vault_`;
                 <input
                   type="number"
                   step="0.1"
+                  inputMode="decimal"
                   placeholder="37.5"
                   value={tempC}
                   onChange={(e) => setTempC(e.target.value)}
@@ -448,9 +451,11 @@ _Sent via DayOne Baby Health Vault_`;
 
       {/* WhatsApp Message Generator Modal */}
       {showWhatsAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Drag indicator */}
+            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
+
             <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
