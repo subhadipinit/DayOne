@@ -1,21 +1,28 @@
 // DayOne PWA Service Worker
-const CACHE_NAME = 'dayone-cache-v1';
+const CACHE_NAME = 'dayone-cache-v2';
 
 const STATIC_PRECACHE = [
   '/',
   '/manifest.json',
-  '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon.svg',
   '/apple-touch-icon.png'
 ];
 
-// Install Event - Precache critical shell files
+// Install Event - Precache critical shell files safely
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_PRECACHE);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        STATIC_PRECACHE.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Precache skipped:', url, err);
+          })
+        )
+      );
+    })
   );
 });
 
@@ -32,7 +39,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Network First for document, Stale-While-Revalidate for static assets
+// Fetch Event - Network First for document navigation, Stale-While-Revalidate for static assets
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
@@ -40,62 +47,46 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (!request.url.startsWith('http')) return;
 
-  // For page navigations (HTML document)
+  // 1. For HTML page navigations: Network First, fallback to cached '/'
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.status === 200) {
+          if (response && response.status === 200) {
             const copy = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return response;
         })
         .catch(() => {
-          // If offline, serve cached page shell
-          return caches.match(request).then((cached) => {
-            return cached || caches.match('/');
-          });
+          return caches.match(request).then((cached) => cached || caches.match('/'));
         })
     );
     return;
   }
 
-  // For static assets (scripts, styles, images, fonts)
+  // 2. For static assets (scripts, styles, images, fonts): Cache First, Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache
-        fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
-            }
-          })
-          .catch(() => {
-            // Ignore offline fetch errors for background refresh
-          });
-        return cachedResponse;
-      }
-
-      return fetch(request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
           return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseToCache);
+        })
+        .catch(() => {
+          // Ignore offline fetch errors for background revalidation
         });
-        return networkResponse;
-      }).catch(() => {
-        // Fallback for offline images if needed
-        return null;
-      });
+
+      // Must never return null to respondWith (avoids Chrome TypeError)
+      return cachedResponse || fetchPromise;
     })
   );
 });
 
-// Allow app to trigger skipWaiting
+// Message listener for immediate updates
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

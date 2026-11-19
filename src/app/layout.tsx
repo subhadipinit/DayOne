@@ -53,10 +53,28 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#E2765A" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="DayOne" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.__dayoneDeferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.__dayoneDeferredPrompt = e;
+                window.dispatchEvent(new CustomEvent('dayone:pwa-prompt-ready'));
+              });
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(err) {
+                  console.warn('[SW Registration Error]', err);
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body className="font-sans antialiased selection:bg-[#FCDCCB] selection:text-[#8A3510] dark:selection:bg-[#543830] dark:selection:text-[#F8BCA0]" suppressHydrationWarning>
         {children}
