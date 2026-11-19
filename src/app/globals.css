@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #faf8f5;
+  --foreground: #201e1d;
+  --card: #ffffff;
+  --card-border: #eae6df;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark {
+  --background: #141317;
+  --foreground: #faf8f5;
+  --card: #1d1c22;
+  --card-border: #2d2b33;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tabular-nums";
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Base border color inheritance */
+* {
+  border-color: var(--card-border);
+}
+
+/* Quiet warm pastel scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 172, 162, 0.45);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 130, 120, 0.65);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(85, 80, 95, 0.6);
+}
+
+/* Confetti canvas stays on top */
+canvas#confetti-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
+}

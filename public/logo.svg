@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" width="640" height="160">
+  <!-- Mark Container -->
+  <g transform="translate(16, 16)">
+    <rect width="128" height="128" rx="32" fill="#E2765A" />
+    <!-- Protective cradle arc / D -->
+    <path
+      d="M 42 36 H 65 C 82 36 94 48 94 64 C 94 80 82 92 65 92 H 42 Z"
+      fill="none"
+      stroke="#FAF8F5"
+      stroke-width="9"
+      stroke-linejoin="round"
+    />
+    <!-- Vertical stem / 1 -->
+    <line
+      x1="46"
+      y1="36"
+      x2="46"
+      y2="92"
+      stroke="#FAF8F5"
+      stroke-width="9"
+      stroke-linecap="round"
+    />
+    <!-- Rising Sun / Day One in soft honey -->
+    <circle cx="67" cy="64" r="12" fill="#FDF6E2" stroke="#FAF8F5" stroke-width="2" />
+    <line
+      x1="55"
+      y1="64"
+      x2="79"
+      y2="64"
+      stroke="#E2765A"
+      stroke-width="2.8"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <!-- Wordmark & Subtitle -->
+  <text x="164" y="80" font-family="system-ui, -apple-system, 'SF Pro Display', sans-serif" font-size="44" font-weight="800" fill="#201E1D" letter-spacing="-1">
+    Day<tspan fill="#E2765A">One</tspan>
+  </text>
+  <text x="166" y="112" font-family="'SF Pro Text', system-ui, sans-serif" font-size="13" font-weight="600" fill="#75706B" letter-spacing="1">
+    GENTLE CARE & HEALTH LOG
+  </text>
+</svg>

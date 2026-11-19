@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#E2765A" />
+  <!-- Protective cradle & 'D' + '1' structure -->
+  <path
+    d="M 168 144 H 260 C 330 144 376 192 376 256 C 376 320 330 368 260 368 H 168 Z"
+    fill="none"
+    stroke="#FAF8F5"
+    stroke-width="36"
+    stroke-linejoin="round"
+  />
+  <!-- Vertical spine of the '1' -->
+  <line
+    x1="186"
+    y1="144"
+    x2="186"
+    y2="368"
+    stroke="#FAF8F5"
+    stroke-width="36"
+    stroke-linecap="round"
+  />
+  <!-- The Rising Sun of 'Day One' / Newborn Dawn in soft honey pastel -->
+  <circle cx="268" cy="256" r="48" fill="#FDF6E2" stroke="#FAF8F5" stroke-width="8" />
+  <!-- Subtle Horizon baseline of clinical calibration -->
+  <line
+    x1="220"
+    y1="256"
+    x2="316"
+    y2="256"
+    stroke="#E2765A"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+</svg>
