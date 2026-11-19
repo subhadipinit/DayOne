@@ -72,6 +72,7 @@ export default function Home() {
       if (data?.session?.user) {
         setCurrentUser(data.session.user);
         setIsOfflineMode(false);
+        store.hydrateFromCloud();
       }
       setIsAuthChecked(true);
     });
@@ -82,6 +83,7 @@ export default function Home() {
         setCurrentUser(session.user);
         setIsOfflineMode(false);
         localStorage.removeItem('dayone_offline_mode');
+        store.hydrateFromCloud();
       } else {
         setCurrentUser(null);
       }
@@ -497,8 +499,45 @@ export default function Home() {
         onUpdateSupabaseConfig={store.updateSupabaseConfig}
         onResetDemo={store.resetToDemoData}
         onSyncToCloud={async () => {
+          let medicineLogs: any[] = [];
+          let weaningFoods: any[] = [];
+          let teethRecords: any[] = [];
+          let milestones: any[] = [];
+          let momCareLogs: any[] = [];
+          let tummyTimeSessions: any[] = [];
+
+          if (typeof window !== 'undefined') {
+            try {
+              const medRaw = localStorage.getItem(`dayone_med_history_${store.profile.id}`);
+              if (medRaw) medicineLogs = JSON.parse(medRaw);
+
+              const foodRaw = localStorage.getItem(`dayone_foods_${store.profile.id}`);
+              if (foodRaw) weaningFoods = JSON.parse(foodRaw);
+
+              const teethRaw = localStorage.getItem(`dayone_teeth_${store.profile.id}`);
+              if (teethRaw) teethRecords = JSON.parse(teethRaw);
+
+              const msRaw = localStorage.getItem(`dayone_milestones_${store.profile.id}`);
+              if (msRaw) milestones = JSON.parse(msRaw);
+
+              const ttRaw = localStorage.getItem('dayone_tummy_sessions');
+              if (ttRaw) tummyTimeSessions = JSON.parse(ttRaw);
+
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('dayone_mom_log_')) {
+                  const val = localStorage.getItem(key);
+                  if (val) momCareLogs.push(JSON.parse(val));
+                }
+              }
+            } catch (e) {
+              console.warn('[Sync] Could not read extra module data:', e);
+            }
+          }
+
           return await pushAllToSupabase({
             profile: store.profile,
+            profilesList: store.profilesList,
             vaccines: store.vaccines,
             growthRecords: store.growthRecords,
             feedingLogs: store.feedingLogs,
@@ -508,6 +547,12 @@ export default function Home() {
             symptoms: store.symptoms,
             prescriptions: store.prescriptions,
             memories: store.memories,
+            medicineLogs,
+            weaningFoods,
+            teethRecords,
+            milestones,
+            momCareLogs,
+            tummyTimeSessions,
           });
         }}
       />

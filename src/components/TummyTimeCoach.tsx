@@ -22,6 +22,7 @@ import {
   Info,
 } from 'lucide-react';
 import { TummyTimeSession, ChildProfile } from '@/lib/types';
+import { syncSingleRecord, deleteSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
 
 interface TummyTimeCoachProps {
@@ -322,6 +323,15 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
       localStorage.setItem('dayone_tummy_sessions', JSON.stringify(updated));
     }
 
+    syncSingleRecord('tummy_time_logs', {
+      id: newSession.id,
+      child_id: profile?.id || null,
+      timestamp: newSession.timestamp,
+      duration_seconds: newSession.durationSeconds,
+      mood: newSession.mood,
+      notes: newSession.notes || null,
+    });
+
     // Reset timer
     handleReset();
     setNotes('');
@@ -346,6 +356,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
       setLocalSessions(updated);
       localStorage.setItem('dayone_tummy_sessions', JSON.stringify(updated));
     }
+    deleteSingleRecord('tummy_time_logs', id);
   };
 
   // Format seconds to mm:ss

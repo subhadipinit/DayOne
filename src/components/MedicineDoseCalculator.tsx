@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ChildProfile, GrowthRecord, MedicineDoseLog } from '@/lib/types';
 import { INITIAL_MEDICINE_LOGS } from '@/lib/initialData';
+import { syncSingleRecord, deleteSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
 
 interface MedicineDoseCalculatorProps {
@@ -439,6 +440,23 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
     setShowLogModal(false);
     setDoseNotes('');
 
+    // Real-time Cloud Sync
+    syncSingleRecord('medicine_logs', {
+      id: newLog.id,
+      child_id: profile.id,
+      timestamp: newLog.timestamp,
+      medicine_name: newLog.medicineName,
+      brand_name: newLog.brandName || null,
+      category: newLog.category || 'other',
+      weight_kg_at_time: newLog.weightKgAtTime || null,
+      dosage_mg: newLog.dosageMg || null,
+      dosage_ml: newLog.dosageMl,
+      temperature_c: newLog.temperatureC || null,
+      reason: newLog.reason || null,
+      administered_by: newLog.administeredBy || null,
+      notes: newLog.notes || null,
+    });
+
     try {
       confetti({
         particleCount: 60,
@@ -454,6 +472,7 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
     const updated = medHistory.filter((m) => m.id !== id);
     setMedHistory(updated);
     localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(updated));
+    deleteSingleRecord('medicine_logs', id);
   };
 
   // 1-Click Copy Medication Summary for Pediatrician

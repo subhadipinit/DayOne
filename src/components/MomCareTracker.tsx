@@ -19,6 +19,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { MomCareLog, ChildProfile } from '@/lib/types';
+import { syncSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
 
 interface MomCareTrackerProps {
@@ -110,6 +111,17 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
     };
     localStorage.setItem(`dayone_mom_log_${todayStr}`, JSON.stringify(log));
     setIsSavedToday(true);
+
+    syncSingleRecord('mom_care_logs', {
+      id: `mom_${todayStr}`,
+      date: todayStr,
+      water_glasses: waterGlasses,
+      mood_rating: moodRating,
+      sleep_hours: sleepHours,
+      pain_level: painLevel,
+      supplements_taken: supplementsTaken,
+      notes: momNotes.trim() || null,
+    });
     try {
       confetti({
         particleCount: 60,

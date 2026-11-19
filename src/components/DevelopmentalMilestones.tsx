@@ -15,6 +15,7 @@ import {
   Baby,
 } from 'lucide-react';
 import { MilestoneCheckRecord, ChildProfile } from '@/lib/types';
+import { syncSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
 
 interface DevelopmentalMilestonesProps {
@@ -106,6 +107,21 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
     };
     setAchievedMilestones(updated);
     localStorage.setItem(`dayone_milestones_${profile.id}`, JSON.stringify(updated));
+
+    const itemMeta = MILESTONE_DATABASE.find((m) => m.key === key);
+    syncSingleRecord('milestone_progress', {
+      id: `ms_${profile.id}_${key}`,
+      child_id: profile.id,
+      milestone_key: key,
+      age_month: itemMeta ? itemMeta.ageMonth : selectedAge,
+      category: itemMeta ? itemMeta.category : 'motor',
+      title: itemMeta ? itemMeta.title : key,
+      description: itemMeta ? itemMeta.description : null,
+      is_achieved: isNowAchieved,
+      achieved_date: isNowAchieved ? new Date().toISOString().split('T')[0] : null,
+      is_red_flag: itemMeta ? Boolean(itemMeta.redFlag) : false,
+      notes: null,
+    });
 
     if (isNowAchieved) {
       try {

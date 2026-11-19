@@ -61,20 +61,20 @@ create table if not exists public.growth_records (
   created_at timestamp with time zone default now()
 );
 
--- 5. Daily Care: Feeding Logs
+-- 5. Daily Care: Feeding Logs (Breastfeeding & Bottle)
 create table if not exists public.feeding_logs (
   id text primary key,
   child_id text references public.children(id) on delete cascade,
   timestamp timestamp with time zone not null,
-  type text not null, -- 'breast', 'bottle', 'pump'
-  left_duration_minutes int,
-  right_duration_minutes int,
+  type text not null, -- 'breast', 'bottle', 'pump', 'solids'
+  left_duration_minutes int default 0,
+  right_duration_minutes int default 0,
   bottle_amount_ml numeric,
   notes text,
   created_at timestamp with time zone default now()
 );
 
--- 6. Daily Care: Diaper Logs
+-- 6. Daily Care: Diaper Logs (Wet, Dirty, Both)
 create table if not exists public.diaper_logs (
   id text primary key,
   child_id text references public.children(id) on delete cascade,
@@ -148,12 +148,107 @@ create table if not exists public.memories (
   created_at timestamp with time zone default now()
 );
 
--- 12. Storage Bucket for Baby Photos, Prescriptions & Receipts
+-- 12. Pediatric Medicine & Fever Dose History
+create table if not exists public.medicine_logs (
+  id text primary key,
+  child_id text references public.children(id) on delete cascade,
+  timestamp timestamp with time zone not null,
+  medicine_name text not null,
+  brand_name text,
+  category text default 'other',
+  weight_kg_at_time numeric,
+  dosage_mg numeric,
+  dosage_ml numeric not null,
+  temperature_c numeric,
+  reason text,
+  administered_by text,
+  notes text,
+  created_at timestamp with time zone default now()
+);
+
+-- 13. Solid Weaning Foods & 100 Foods Challenge
+create table if not exists public.weaning_foods (
+  id text primary key,
+  child_id text references public.children(id) on delete cascade,
+  name text not null,
+  category text not null,
+  is_introduced boolean default false,
+  first_offered_date date,
+  reaction text,
+  allergies_observed text[],
+  times_offered int default 0,
+  notes text,
+  age_stage_months text,
+  is_iron_rich boolean default false,
+  is_allergen boolean default false,
+  updated_at timestamp with time zone default now()
+);
+
+-- 14. 20-Baby-Teeth Eruption Map
+create table if not exists public.teeth_records (
+  id text primary key,
+  child_id text references public.children(id) on delete cascade,
+  tooth_key text,
+  name text not null,
+  arch text,
+  jaw text,
+  side text,
+  type text,
+  typical_age_range_display text,
+  status text default 'not_erupted',
+  erupted_date date,
+  is_erupted boolean default false,
+  symptoms text[],
+  notes text,
+  updated_at timestamp with time zone default now()
+);
+
+-- 15. CDC & IAP Developmental Milestones Checklist
+create table if not exists public.milestone_progress (
+  id text primary key,
+  child_id text references public.children(id) on delete cascade,
+  milestone_key text,
+  age_month int not null,
+  category text not null,
+  title text not null,
+  description text,
+  is_achieved boolean default false,
+  achieved_date date,
+  is_red_flag boolean default false,
+  notes text,
+  updated_at timestamp with time zone default now()
+);
+
+-- 16. Maternal Postpartum Recovery & Hydration
+create table if not exists public.mom_care_logs (
+  id text primary key,
+  date date not null,
+  water_glasses int default 0,
+  mood_rating int default 3,
+  sleep_hours numeric default 0,
+  pain_level int default 0,
+  supplements_taken boolean default false,
+  notes text,
+  updated_at timestamp with time zone default now()
+);
+
+-- 17. Tummy Time Sessions
+create table if not exists public.tummy_time_logs (
+  id text primary key,
+  child_id text references public.children(id) on delete cascade,
+  timestamp timestamp with time zone not null,
+  duration_seconds int not null,
+  mood text default 'calm',
+  notes text,
+  created_at timestamp with time zone default now()
+);
+
+-- 18. Storage Bucket for Baby Photos, Prescriptions & Receipts
 insert into storage.buckets (id, name, public) 
 values ('baby-media', 'baby-media', true)
 on conflict (id) do update set public = true;
 
--- 13. Enable Row-Level Security (RLS) with Public Access policies for fast family use
+-- 19. Enable Row-Level Security (RLS) on all tables
 alter table public.children enable row level security;
 alter table public.vaccines enable row level security;
 alter table public.growth_records enable row level security;
@@ -164,8 +259,14 @@ alter table public.doctor_questions enable row level security;
 alter table public.symptoms enable row level security;
 alter table public.prescriptions enable row level security;
 alter table public.memories enable row level security;
+alter table public.medicine_logs enable row level security;
+alter table public.weaning_foods enable row level security;
+alter table public.teeth_records enable row level security;
+alter table public.milestone_progress enable row level security;
+alter table public.mom_care_logs enable row level security;
+alter table public.tummy_time_logs enable row level security;
 
--- Allow anonymous access with publishable key (or authenticated)
+-- 20. Public access policies for seamless client use
 create policy "Allow all actions for anon users" on public.children for all using (true) with check (true);
 create policy "Allow all actions for anon users" on public.vaccines for all using (true) with check (true);
 create policy "Allow all actions for anon users" on public.growth_records for all using (true) with check (true);
@@ -176,6 +277,12 @@ create policy "Allow all actions for anon users" on public.doctor_questions for 
 create policy "Allow all actions for anon users" on public.symptoms for all using (true) with check (true);
 create policy "Allow all actions for anon users" on public.prescriptions for all using (true) with check (true);
 create policy "Allow all actions for anon users" on public.memories for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.medicine_logs for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.weaning_foods for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.teeth_records for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.milestone_progress for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.mom_care_logs for all using (true) with check (true);
+create policy "Allow all actions for anon users" on public.tummy_time_logs for all using (true) with check (true);
 
 -- Storage bucket access policy
 create policy "Public Access to baby-media" on storage.objects for all using (bucket_id = 'baby-media') with check (bucket_id = 'baby-media');

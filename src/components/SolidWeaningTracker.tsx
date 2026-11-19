@@ -31,6 +31,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { SolidFoodItem, ChildProfile, WeaningRecipe } from '@/lib/types';
+import { syncSingleRecord } from '@/lib/syncService';
 import {
   AGE_WISE_WEANING_STAGES,
   COMPREHENSIVE_WEANING_RECIPES,
@@ -142,6 +143,25 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
     setFoods(updated);
     localStorage.setItem(`dayone_foods_${profile.id}`, JSON.stringify(updated));
     setSelectedFoodForReaction(null);
+
+    const changed = updated.find((f) => f.id === foodId);
+    if (changed) {
+      syncSingleRecord('weaning_foods', {
+        id: changed.id,
+        child_id: profile.id,
+        name: changed.name,
+        category: changed.category,
+        is_introduced: changed.isIntroduced ?? false,
+        first_offered_date: changed.firstOfferedDate || null,
+        reaction: changed.reaction || null,
+        allergies_observed: changed.allergiesObserved || [],
+        times_offered: changed.timesOffered || 0,
+        notes: changed.notes || null,
+        age_stage_months: changed.ageStageMonths || null,
+        is_iron_rich: changed.isIronRich ?? false,
+        is_allergen: changed.isAllergen ?? false,
+      });
+    }
 
     if (reaction === 'loved') {
       try {

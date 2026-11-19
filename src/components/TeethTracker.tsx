@@ -13,6 +13,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { ToothRecord, ChildProfile } from '@/lib/types';
+import { syncSingleRecord, deleteSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
 
 interface TeethTrackerProps {
@@ -133,6 +134,24 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
 
     if (!isErupted) {
       delete updated[selectedToothKey];
+      deleteSingleRecord('teeth_records', `tooth_${profile.id}_${selectedToothKey}`);
+    } else {
+      syncSingleRecord('teeth_records', {
+        id: `tooth_${profile.id}_${selectedToothKey}`,
+        child_id: profile.id,
+        tooth_key: selectedToothKey,
+        name: selectedToothMeta.name,
+        arch: selectedToothMeta.jaw,
+        jaw: selectedToothMeta.jaw,
+        side: selectedToothMeta.side,
+        type: selectedToothMeta.type,
+        typical_age_range_display: selectedToothMeta.typicalRange,
+        status: 'erupted',
+        erupted_date: eruptDate || null,
+        is_erupted: true,
+        symptoms: selectedSymptoms || [],
+        notes: toothNotes.trim() || null,
+      });
     }
 
     setTeethRecords(updated);
