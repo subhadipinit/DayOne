@@ -21,9 +21,19 @@ import {
   Heart,
   Wind,
   Download,
+  Syringe,
+  TrendingUp,
+  Utensils,
+  Award,
+  Calculator,
+  Stethoscope,
+  Camera,
+  Smile,
+  LayoutGrid,
 } from 'lucide-react';
 import { ChildProfile } from '@/lib/types';
 import { DayOneLogo } from './DayOneLogo';
+import { ActiveTab } from './BottomNav';
 
 interface NavbarProps {
   profile: ChildProfile;
@@ -39,6 +49,8 @@ interface NavbarProps {
   onSignOut: () => void;
   onOpenLogin: () => void;
   onOpenShusher?: () => void;
+  activeTab?: ActiveTab;
+  onChangeTab?: (tab: ActiveTab) => void;
 }
 
 // Calculate concise age string for header badge
@@ -76,6 +88,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   onOpenLogin,
   onOpenShusher,
+  activeTab,
+  onChangeTab,
 }) => {
   const [isChildMenuOpen, setIsChildMenuOpen] = useState<boolean>(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
@@ -480,63 +494,140 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
 
-            {/* Mobile Dropdown Menu */}
+            {/* Mobile Dropdown Menu with Complete Page Navigation */}
             {isMobileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-lg shadow-black/10 z-50 p-2 space-y-1 animate-in fade-in-0 zoom-in-95 duration-150">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onToggleRole();
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
-                >
-                  <span className="text-[#4D4845] dark:text-[#DDD8D0]">Role Mode</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${userRole === 'parent'
-                    ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB]'
-                    : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1]'
-                    }`}>
-                    {userRole === 'parent' ? 'Parent (Admin)' : 'Family (View)'}
+              <div className="absolute right-0 mt-2 w-72 max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl shadow-black/15 z-50 p-2.5 space-y-3 animate-in fade-in-0 zoom-in-95 duration-150">
+                {/* 1. All 11 Pages & Trackers */}
+                <div>
+                  <div className="flex items-center justify-between px-2.5 py-1 mb-1">
+                    <span className="text-[11px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
+                      All Pages & Trackers (11)
+                    </span>
+                    <span className="text-[10px] text-[#E2765A] font-semibold bg-[#FFF0E6] dark:bg-[#2D2422] px-2 py-0.5 rounded-full">
+                      Touch to open
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    {[
+                      { id: 'vaccines' as const, label: 'Vaccine Tracker', icon: Syringe },
+                      { id: 'growth' as const, label: 'WHO Growth Charts', icon: TrendingUp },
+                      { id: 'daily' as const, label: 'Daily Care & Feeds', icon: Baby },
+                      { id: 'tummy' as const, label: 'Tummy Time Coach', icon: Sparkles },
+                      { id: 'weaning' as const, label: 'First Foods & Weaning (6M+)', icon: Utensils },
+                      { id: 'milestones' as const, label: 'CDC Milestones', icon: Award },
+                      { id: 'teeth' as const, label: '20-Baby-Teeth Map', icon: Smile },
+                      { id: 'dose' as const, label: 'Fever & Dose Calculator', icon: Calculator },
+                      { id: 'mom' as const, label: 'Mom Care & Recovery', icon: Heart },
+                      { id: 'doctor' as const, label: 'Doctor Visits & Rx', icon: Stethoscope },
+                      { id: 'memories' as const, label: 'Milestone Records & Photos', icon: Camera },
+                    ].map((page) => {
+                      const isCurrent = activeTab === page.id;
+                      const PageIcon = page.icon;
+
+                      return (
+                        <button
+                          key={page.id}
+                          type="button"
+                          onClick={() => {
+                            if (onChangeTab) onChangeTab(page.id);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
+                            isCurrent
+                              ? 'bg-[#FFF0E6] dark:bg-[#2D2422] text-[#8A3510] dark:text-[#F8BCA0] font-semibold border border-[#FCDCCB] dark:border-[#543830]'
+                              : 'text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <PageIcon className={`w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-[#E2765A]' : 'text-[#75706B] dark:text-[#9E9892]'}`} />
+                            <span className="truncate">{page.label}</span>
+                          </div>
+                          {isCurrent && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E2765A] shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Tools & Settings Divider */}
+                <div className="pt-2 border-t border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+                  <span className="text-[11px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider px-2.5 block mb-1">
+                    Utilities & Settings
                   </span>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenCelebration();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#E2765A]" />
-                  <span>Birthday & Milestones</span>
-                </button>
+                  {onOpenShusher && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenShusher();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
+                    >
+                      <Wind className="w-3.5 h-3.5 text-[#E2765A]" />
+                      <span>Infant Shusher & White Noise</span>
+                    </button>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onOpenSettings();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
-                >
-                  <Settings className="w-3.5 h-3.5 text-[#75706B]" />
-                  <span>App & Baby Settings</span>
-                </button>
-
-                {!isStandalone && (
                   <button
                     type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      window.dispatchEvent(new CustomEvent('dayone:trigger-pwa-install'));
+                      onOpenCelebration();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#E2765A] bg-[#FFF0E6]/60 dark:bg-[#332522]/60 hover:bg-[#FFF0E6] dark:hover:bg-[#332522] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
                   >
-                    <Download className="w-3.5 h-3.5 text-[#E2765A]" />
-                    <span>Install DayOne App</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#E2765A]" />
+                    <span>Birthday & Milestone Summary</span>
                   </button>
-                )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onToggleRole();
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
+                  >
+                    <span className="text-[#4D4845] dark:text-[#DDD8D0]">Role Mode</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      userRole === 'parent'
+                        ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB]'
+                        : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1]'
+                    }`}>
+                      {userRole === 'parent' ? 'Parent (Admin)' : 'Family (View)'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onOpenSettings();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-[#75706B]" />
+                    <span>App & Baby Settings</span>
+                  </button>
+
+                  {!isStandalone && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent('dayone:trigger-pwa-install'));
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#E2765A] bg-[#FFF0E6]/80 dark:bg-[#332522]/80 hover:bg-[#FFF0E6] dark:hover:bg-[#332522] border border-[#FCDCCB] dark:border-[#523A34] transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 text-[#E2765A]" />
+                      <span>Install DayOne App</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

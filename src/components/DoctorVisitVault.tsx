@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Send,
   X,
+  Calculator,
 } from 'lucide-react';
 import {
   ChildProfile,
@@ -28,6 +29,7 @@ import {
   SymptomLog,
 } from '@/lib/types';
 import { generateDoctorSummaryPdf } from '@/lib/pdfExport';
+import { ActiveTab } from './BottomNav';
 
 interface DoctorVisitVaultProps {
   profile: ChildProfile;
@@ -40,6 +42,7 @@ interface DoctorVisitVaultProps {
   onDeleteQuestion: (id: string) => void;
   onAddSymptom: (sym: Omit<SymptomLog, 'id'>) => void;
   userRole: 'parent' | 'family';
+  onNavigateTab?: (tab: ActiveTab) => void;
 }
 
 export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
@@ -53,6 +56,7 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
   onDeleteQuestion,
   onAddSymptom,
   userRole,
+  onNavigateTab,
 }) => {
   const [newQuestionText, setNewQuestionText] = useState<string>('');
   const [showSymptomModal, setShowSymptomModal] = useState<boolean>(false);
@@ -158,6 +162,24 @@ _Sent via DayOne Baby Health Vault_`;
 
   return (
     <div className="space-y-6">
+      {/* Quick Navigation to Dose Calculator */}
+      {onNavigateTab && (
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FFF7F2] dark:bg-[#261E1C] border border-[#FCDCCB] dark:border-[#523A34] text-xs">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-[#E2765A] shrink-0" />
+            <span className="text-[#8A3510] dark:text-[#F8BCA0] font-medium">
+              Need weight-based medication doses or fever calculator?
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('dose')}
+            className="px-3 py-1.5 rounded-xl bg-[#E2765A] hover:bg-[#CB6145] text-white font-semibold text-[11px] shrink-0 active:scale-[0.97] transition-all"
+          >
+            Open Calculator →
+          </button>
+        </div>
+      )}
 
       {/* 1-Click Clinic PDF Download Banner */}
       <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] text-[#201E1D] dark:text-[#FAF8F5] flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs">

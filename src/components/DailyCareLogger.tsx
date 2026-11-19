@@ -14,8 +14,12 @@ import {
   Milk,
   CheckCircle,
   Wind,
+  Sparkles,
+  Utensils,
+  Heart,
 } from 'lucide-react';
 import { FeedingLog, DiaperLog, SleepLog } from '@/lib/types';
+import { ActiveTab } from './BottomNav';
 
 interface DailyCareLoggerProps {
   childId: string;
@@ -29,6 +33,7 @@ interface DailyCareLoggerProps {
   onAddSleepLog: (log: Omit<SleepLog, 'id'>) => void;
   userRole: 'parent' | 'family';
   onOpenShusher?: () => void;
+  onNavigateTab?: (tab: ActiveTab) => void;
 }
 
 export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
@@ -43,6 +48,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
   onAddSleepLog,
   userRole,
   onOpenShusher,
+  onNavigateTab,
 }) => {
   // --- BREASTFEEDING TIMER STATE ---
   const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
@@ -149,6 +155,38 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Quick Routine Navigation Chips (Mobile & Desktop) */}
+      {onNavigateTab && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
+          <span className="text-[#75706B] dark:text-[#9E9892] text-[11px] font-semibold uppercase tracking-wider shrink-0">
+            Related:
+          </span>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('weaning')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+          >
+            <Utensils className="w-3.5 h-3.5 text-[#E2765A]" />
+            <span>First Foods & Weaning (6M+)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('tummy')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#E2765A]" />
+            <span>Tummy Time Coach</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('mom')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+          >
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" />
+            <span>Mom Care</span>
+          </button>
+        </div>
+      )}
       
       {/* Top 3 Gentle Pastel Action Bento Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

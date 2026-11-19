@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Syringe,
   TrendingUp,
@@ -48,6 +48,16 @@ export default function Home() {
   const [isShareCardOpen, setIsShareCardOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isShusherOpen, setIsShusherOpen] = useState<boolean>(false);
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll active tab pill into view on mobile and desktop
+  useEffect(() => {
+    if (!tabScrollRef.current) return;
+    const activeBtn = tabScrollRef.current.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeTab]);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -156,26 +166,22 @@ export default function Home() {
           setIsOfflineMode(false);
           localStorage.removeItem('dayone_offline_mode');
         }}
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 pb-24 md:pb-6">
-
-        {/* Hero Banner with Precision Age Counter & Celebration Alert */}
-        <HeroAgeTicker
-          profile={store.profile}
-          latestGrowth={latestGrowth}
-          onOpenShareCard={() => setIsShareCardOpen(true)}
-          onOpenCelebration={() => setIsCelebrationOpen(true)}
-        />
-
-        {/* Primary Feature Tabs Switcher (Desktop / Tablet) */}
-        <div className="hidden md:block sticky top-16 z-30 py-2 backdrop-blur-md bg-[#FAF8F5]/90 dark:bg-[#141317]/90 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-
+      {/* Primary Feature Tabs Switcher (Visible on Mobile, Tablet & Desktop) */}
+      <div className="sticky top-16 z-30 py-2.5 backdrop-blur-md bg-[#FAF8F5]/96 dark:bg-[#141317]/96 border-b border-[#EAE6DF] dark:border-[#2D2B33] transition-colors shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div
+            ref={tabScrollRef}
+            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth overscroll-x-contain"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <button
+              data-tab="vaccines"
               onClick={() => setActiveTab('vaccines')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'vaccines'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'vaccines'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -191,14 +197,15 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="growth"
               onClick={() => setActiveTab('growth')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'growth'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'growth'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>WHO Growth Charts</span>
+              <span>WHO Growth</span>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${activeTab === 'growth'
                 ? 'bg-white/25 text-white'
                 : 'bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0]'
@@ -208,19 +215,21 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="daily"
               onClick={() => setActiveTab('daily')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'daily'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'daily'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
             >
               <Baby className="w-3.5 h-3.5" />
-              <span>Daily Care & Feeds</span>
+              <span>Daily Care</span>
             </button>
 
             <button
+              data-tab="tummy"
               onClick={() => setActiveTab('tummy')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'tummy'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'tummy'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -230,8 +239,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="weaning"
               onClick={() => setActiveTab('weaning')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'weaning'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'weaning'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -241,8 +251,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="milestones"
               onClick={() => setActiveTab('milestones')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'milestones'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'milestones'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -252,8 +263,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="teeth"
               onClick={() => setActiveTab('teeth')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'teeth'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'teeth'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -263,8 +275,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="dose"
               onClick={() => setActiveTab('dose')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'dose'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'dose'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -274,8 +287,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="mom"
               onClick={() => setActiveTab('mom')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'mom'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'mom'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -285,8 +299,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="doctor"
               onClick={() => setActiveTab('doctor')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'doctor'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'doctor'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -296,8 +311,9 @@ export default function Home() {
             </button>
 
             <button
+              data-tab="memories"
               onClick={() => setActiveTab('memories')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${activeTab === 'memories'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'memories'
                 ? 'bg-[#E2765A] text-white shadow-sm'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
                 }`}
@@ -311,9 +327,20 @@ export default function Home() {
                 {store.memories.length}
               </span>
             </button>
-
           </div>
         </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 pb-24 md:pb-6">
+
+        {/* Hero Banner with Precision Age Counter & Celebration Alert */}
+        <HeroAgeTicker
+          profile={store.profile}
+          latestGrowth={latestGrowth}
+          onOpenShareCard={() => setIsShareCardOpen(true)}
+          onOpenCelebration={() => setIsCelebrationOpen(true)}
+        />
 
         {/* Tab 1: Vaccines */}
         {activeTab === 'vaccines' && (
@@ -349,6 +376,7 @@ export default function Home() {
             onAddSleepLog={store.addSleepLog}
             userRole={store.userRole}
             onOpenShusher={() => setIsShusherOpen(true)}
+            onNavigateTab={setActiveTab}
           />
         )}
 
@@ -390,6 +418,7 @@ export default function Home() {
             profile={store.profile}
             latestGrowth={latestGrowth}
             userRole={store.userRole}
+            onNavigateTab={setActiveTab}
           />
         )}
 
@@ -415,6 +444,7 @@ export default function Home() {
               onDeleteQuestion={store.deleteDoctorQuestion}
               onAddSymptom={store.addSymptom}
               userRole={store.userRole}
+              onNavigateTab={setActiveTab}
             />
             <PrescriptionVault
               childId={store.profile.id}
@@ -461,6 +491,11 @@ export default function Home() {
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         vaccinesDueCount={store.vaccines.filter((v) => v.status === 'upcoming' || v.status === 'overdue').length}
+        growthCount={store.growthRecords.length}
+        memoriesCount={store.memories.length}
+        onOpenShusher={() => setIsShusherOpen(true)}
+        onOpenCelebration={() => setIsCelebrationOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* MODALS */}

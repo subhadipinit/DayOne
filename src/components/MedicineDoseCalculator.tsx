@@ -23,16 +23,19 @@ import {
   X,
   History,
   FileText,
+  Stethoscope,
 } from 'lucide-react';
 import { ChildProfile, GrowthRecord, MedicineDoseLog } from '@/lib/types';
 import { INITIAL_MEDICINE_LOGS } from '@/lib/initialData';
 import { syncSingleRecord, deleteSingleRecord } from '@/lib/syncService';
 import confetti from 'canvas-confetti';
+import { ActiveTab } from './BottomNav';
 
 interface MedicineDoseCalculatorProps {
   profile: ChildProfile;
   latestGrowth?: GrowthRecord;
   userRole?: 'parent' | 'family';
+  onNavigateTab?: (tab: ActiveTab) => void;
 }
 
 export type MedicineCategory = 'fever' | 'colic' | 'supplement' | 'cold' | 'digestive';
@@ -298,6 +301,7 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
   profile,
   latestGrowth,
   userRole = 'parent',
+  onNavigateTab,
 }) => {
   // Baby's active weight in kg
   const defaultWeight = latestGrowth?.weightKg || profile.birthWeightKg || 4.5;
@@ -518,6 +522,24 @@ _Generated via DayOne Baby Care Vault_`;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
+      {/* Quick Navigation to Doctor Visit Vault */}
+      {onNavigateTab && (
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FFF7F2] dark:bg-[#261E1C] border border-[#FCDCCB] dark:border-[#523A34] text-xs">
+          <div className="flex items-center gap-2">
+            <Stethoscope className="w-4 h-4 text-[#E2765A] shrink-0" />
+            <span className="text-[#8A3510] dark:text-[#F8BCA0] font-medium">
+              Need to check prescriptions or notes from the pediatrician?
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigateTab('doctor')}
+            className="px-3 py-1.5 rounded-xl bg-[#E2765A] hover:bg-[#CB6145] text-white font-semibold text-[11px] shrink-0 active:scale-[0.97] transition-all"
+          >
+            Clinic & Rx →
+          </button>
+        </div>
+      )}
       
       {/* Header Banner */}
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-rose-500/10 via-amber-500/5 to-purple-500/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
