@@ -37,6 +37,7 @@ import { MedicineDoseCalculator } from '@/components/MedicineDoseCalculator';
 import { LoginPage } from '@/components/LoginPage';
 import { DayOneLogo } from '@/components/DayOneLogo';
 import { BottomNav, ActiveTab } from '@/components/BottomNav';
+import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { pushAllToSupabase } from '@/lib/syncService';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 
@@ -510,6 +511,9 @@ export default function Home() {
           });
         }}
       />
+
+      {/* PWA Install Banner & iOS Instructions Modal */}
+      <PwaInstallPrompt />
 
     </div>
   );

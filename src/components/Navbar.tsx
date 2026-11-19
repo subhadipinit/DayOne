@@ -20,6 +20,7 @@ import {
   Lock,
   Heart,
   Wind,
+  Download,
 } from 'lucide-react';
 import { ChildProfile } from '@/lib/types';
 import { DayOneLogo } from './DayOneLogo';
@@ -79,6 +80,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isChildMenuOpen, setIsChildMenuOpen] = useState<boolean>(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isStandalone, setIsStandalone] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const check = () => {
+      return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://')
+      );
+    };
+    setIsStandalone(Boolean(check()));
+    const handleInstalled = () => setIsStandalone(true);
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => window.removeEventListener('appinstalled', handleInstalled);
+  }, []);
 
   const childMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -268,6 +285,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Section: Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+
+          {/* PWA App Install Button */}
+          {!isStandalone && (
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('dayone:trigger-pwa-install'));
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold text-[#E2765A] bg-[#FFF0E6] hover:bg-[#FFE5D6] dark:bg-[#332522] dark:hover:bg-[#402F2B] border border-[#FCDCCB] dark:border-[#523A34] transition-all duration-150 active:scale-[0.97]"
+              title="Install DayOne to your Home Screen or Desktop"
+            >
+              <Download className="w-3.5 h-3.5 text-[#E2765A]" />
+              <span>Install App</span>
+            </button>
+          )}
           
           {/* White Noise & Infant Shusher Button */}
           {onOpenShusher && (
@@ -498,6 +530,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Settings className="w-3.5 h-3.5 text-[#75706B]" />
                   <span>App & Baby Settings</span>
                 </button>
+
+                {!isStandalone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      window.dispatchEvent(new CustomEvent('dayone:trigger-pwa-install'));
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#E2765A] bg-[#FFF0E6]/60 dark:bg-[#332522]/60 hover:bg-[#FFF0E6] dark:hover:bg-[#332522] transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#E2765A]" />
+                    <span>Install DayOne App</span>
+                  </button>
+                )}
               </div>
             )}
           </div>

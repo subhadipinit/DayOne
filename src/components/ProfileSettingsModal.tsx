@@ -9,6 +9,9 @@ import {
   Check,
   RotateCcw,
   Baby,
+  Download,
+  Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 import { ChildProfile } from '@/lib/types';
 import { SupabaseConfig } from '@/lib/store';
@@ -39,9 +42,20 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   onResetDemo,
   onSyncToCloud,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'siblings' | 'cloud' | 'reset'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'siblings' | 'cloud' | 'pwa' | 'reset'>('profile');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [isPwaInstalled, setIsPwaInstalled] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const check = () => (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://')
+    );
+    setIsPwaInstalled(Boolean(check()));
+  }, []);
   
   // Profile form state
   const [name, setName] = useState<string>(profile.name);
@@ -174,6 +188,16 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             }`}
           >
             Cloud Sync
+          </button>
+          <button
+            onClick={() => setActiveTab('pwa')}
+            className={`px-3 py-1 rounded-full transition-colors duration-150 ${
+              activeTab === 'pwa'
+                ? 'bg-[#E2765A] text-white shadow-xs'
+                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D]'
+            }`}
+          >
+            PWA App
           </button>
           <button
             onClick={() => setActiveTab('reset')}
@@ -498,7 +522,77 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           </div>
         )}
 
-        {/* TAB 4: RESET DEMO DATA */}
+        {/* TAB 4: PWA INSTALL & OFFLINE STATUS */}
+        {activeTab === 'pwa' && (
+          <div className="space-y-4 text-xs">
+            <div
+              className={`p-4 rounded-2xl border ${
+                isPwaInstalled
+                  ? 'bg-[#EDF5EE] dark:bg-[#1A2E1F] border-[#CFE2D1] dark:border-[#2D4A33] text-[#23522A] dark:text-[#AECDB2]'
+                  : 'bg-[#FFF7F2] dark:bg-[#261E1C] border-[#FCDCCB] dark:border-[#543830] text-[#8A3510] dark:text-[#F8BCA0]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 font-semibold text-sm">
+                {isPwaInstalled ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-[#5A9663]" />
+                    <span>DayOne App is Installed</span>
+                  </>
+                ) : (
+                  <>
+                    <Smartphone className="w-5 h-5 text-[#E2765A]" />
+                    <span>Installable Web App (PWA)</span>
+                  </>
+                )}
+              </div>
+              <p className="mt-1 text-xs opacity-90 leading-relaxed">
+                {isPwaInstalled
+                  ? 'DayOne is currently running as an installed standalone app on this device. Offline cache and background sync are active.'
+                  : 'Install DayOne onto your home screen or desktop for 1-tap instant launching, full-screen distraction-free care logging, and offline clinical records.'}
+              </p>
+            </div>
+
+            {!isPwaInstalled && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  window.dispatchEvent(new CustomEvent('dayone:trigger-pwa-install'));
+                }}
+                className="w-full py-2.5 rounded-xl bg-[#E2765A] hover:bg-[#CB6145] text-white font-semibold flex items-center justify-center gap-2 transition-colors duration-150 active:scale-[0.98] shadow-xs cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Install DayOne on this Device</span>
+              </button>
+            )}
+
+            <div className="p-3.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2.5">
+              <h4 className="font-semibold text-[#201E1D] dark:text-[#FAF8F5]">PWA Features Active:</h4>
+              <ul className="space-y-2 text-[11px] text-[#75706B] dark:text-[#9E9892]">
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5A9663] mt-1.5 shrink-0" />
+                  <span>
+                    <strong className="text-[#201E1D] dark:text-[#FAF8F5]">Service Worker:</strong> Shell caching & offline asset fallback enabled.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5A9663] mt-1.5 shrink-0" />
+                  <span>
+                    <strong className="text-[#201E1D] dark:text-[#FAF8F5]">Offline Records:</strong> IndexedDB / LocalStorage holds all nursing, growth & medication logs.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5A9663] mt-1.5 shrink-0" />
+                  <span>
+                    <strong className="text-[#201E1D] dark:text-[#FAF8F5]">Cross-Platform:</strong> Works seamlessly on iOS Safari, Android Chrome, Mac, Windows & tablets.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: RESET DEMO DATA */}
         {activeTab === 'reset' && (
           <div className="space-y-3.5 text-xs">
             <div className="p-3.5 rounded-xl bg-[#FDF0F2] border border-[#F8D0D6] text-[#8A2338]">
