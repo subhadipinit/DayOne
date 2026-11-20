@@ -229,9 +229,9 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('feeding')}
-            className="tap-spring flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FFDBD0]/50 hover:bg-[#FFDBD0]/80 dark:bg-[#3D1E16]/50 dark:hover:bg-[#3D1E16]/80 text-center gap-1.5 shadow-2xs group cursor-pointer"
+            className="tap-feedback flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl bg-[#FFF0E6] hover:bg-[#FFE5D6] dark:bg-[#2D1F1A] dark:hover:bg-[#382620] text-center gap-1.5 shadow-xs border border-[#FCDCCB]/60 dark:border-[#4A322A]/60 cursor-pointer min-h-[76px]"
           >
-            <div className="w-11 h-11 rounded-full bg-white dark:bg-[#261E1C] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shadow-2xs group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-[#1E1614] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shadow-xs">
               <Milk className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-[#191C1A] dark:text-[#FAF8F5]">
@@ -243,9 +243,9 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('diaper')}
-            className="tap-spring flex flex-col items-center justify-center p-3 rounded-2xl bg-[#C8EBCC]/40 hover:bg-[#C8EBCC]/70 dark:bg-[#1E2E21]/40 dark:hover:bg-[#1E2E21]/70 text-center gap-1.5 shadow-2xs group cursor-pointer"
+            className="tap-feedback flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl bg-[#EDF5EE] hover:bg-[#E1EDE4] dark:bg-[#1A281E] dark:hover:bg-[#223528] text-center gap-1.5 shadow-xs border border-[#CFE2D1]/60 dark:border-[#2D4532]/60 cursor-pointer min-h-[76px]"
           >
-            <div className="w-11 h-11 rounded-full bg-white dark:bg-[#1C261E] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1] shadow-2xs group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-[#141F17] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1] shadow-xs">
               <Droplets className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-[#191C1A] dark:text-[#FAF8F5]">
@@ -257,9 +257,9 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('sleep')}
-            className="tap-spring flex flex-col items-center justify-center p-3 rounded-2xl bg-[#E6E9E4] hover:bg-[#E0E3DF] dark:bg-[#232724] dark:hover:bg-[#2A302B] text-center gap-1.5 shadow-2xs group cursor-pointer"
+            className="tap-feedback flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl bg-[#F0EEEC] hover:bg-[#E8E5E2] dark:bg-[#201F25] dark:hover:bg-[#292830] text-center gap-1.5 shadow-xs border border-[#E0DCD7]/60 dark:border-[#35333E]/60 cursor-pointer min-h-[76px]"
           >
-            <div className="w-11 h-11 rounded-full bg-white dark:bg-[#1C201D] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1] shadow-2xs group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-[#16151B] flex items-center justify-center text-[#55505C] dark:text-[#DDD8D0] shadow-xs">
               <Moon className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-[#191C1A] dark:text-[#FAF8F5]">
@@ -274,9 +274,9 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               if (onNavigateTab) onNavigateTab('tummy');
               else showToast('+5m added to tummy goal!', 'timer');
             }}
-            className="tap-spring flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FFDDAE]/40 hover:bg-[#FFDDAE]/70 dark:bg-[#3D2C12]/40 dark:hover:bg-[#3D2C12]/70 text-center gap-1.5 shadow-2xs group cursor-pointer"
+            className="tap-feedback flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-2xl bg-[#FFF6E8] hover:bg-[#FFEDD1] dark:bg-[#2C2314] dark:hover:bg-[#382C19] text-center gap-1.5 shadow-xs border border-[#F8DCB0]/60 dark:border-[#4B391D]/60 cursor-pointer min-h-[76px]"
           >
-            <div className="w-11 h-11 rounded-full bg-white dark:bg-[#282116] flex items-center justify-center text-[#7C5400] dark:text-[#F8BC58] shadow-2xs group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-[#1F180E] flex items-center justify-center text-[#7C5400] dark:text-[#F8BC58] shadow-xs">
               <Timer className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-[#191C1A] dark:text-[#FAF8F5]">
@@ -305,18 +305,18 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           {/* Last Feed Card */}
           <div
             onClick={() => setActiveModal('feeding')}
-            className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 card-interactive cursor-pointer"
+            className="tap-feedback bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 cursor-pointer"
           >
             <div className="flex items-start justify-between">
-              <div className="w-8 h-8 rounded-full bg-[#FFDBD0] dark:bg-[#3E1C12] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E]">
+              <div className="w-8 h-8 rounded-full bg-[#FFF0E6] dark:bg-[#3E1C12] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E]">
                 <Milk className="w-4 h-4" />
               </div>
-              <span className="text-[10px] text-[#424842] dark:text-[#9E9892] font-medium">
+              <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] font-medium">
                 {getTimeAgo(lastFeed?.timestamp)}
               </span>
             </div>
             <div>
-              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight">
+              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight tabular-nums">
                 {lastFeed?.type === 'bottle' ? `${lastFeed.bottleAmountMl || 120} ml` : `${(lastFeed?.leftDurationMinutes || 10) + (lastFeed?.rightDurationMinutes || 8)}m`}
               </span>
               <span className="text-xs font-semibold text-[#99462A] dark:text-[#FFB59E] block">
@@ -334,18 +334,18 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           {/* Diapers Card */}
           <div
             onClick={() => setActiveModal('diaper')}
-            className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 card-interactive cursor-pointer"
+            className="tap-feedback bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 cursor-pointer"
           >
             <div className="flex items-start justify-between">
-              <div className="w-8 h-8 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1]">
+              <div className="w-8 h-8 rounded-full bg-[#EDF5EE] dark:bg-[#203D24] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1]">
                 <Droplets className="w-4 h-4" />
               </div>
-              <span className="text-[10px] text-[#424842] dark:text-[#9E9892] font-medium">
+              <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] font-medium">
                 {getTimeAgo(lastDiaper?.timestamp)}
               </span>
             </div>
             <div>
-              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight">
+              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight tabular-nums">
                 {totalDiapers > 0 ? `${totalDiapers} Changed` : '0 Changed'}
               </span>
               <span className="text-xs font-semibold text-[#44634B] dark:text-[#ADCFB1] block">
@@ -372,21 +372,21 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           {/* Sleep Card */}
           <div
             onClick={() => setActiveModal('sleep')}
-            className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 card-interactive cursor-pointer"
+            className="tap-feedback bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 cursor-pointer"
           >
             <div className="flex items-start justify-between">
-              <div className="w-8 h-8 rounded-full bg-[#E6E9E4] dark:bg-[#262E28] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1]">
+              <div className="w-8 h-8 rounded-full bg-[#F0EEEC] dark:bg-[#262E28] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1]">
                 <Moon className="w-4 h-4" />
               </div>
-              <span className="text-[10px] text-[#44634B] dark:text-[#ADCFB1] font-bold bg-[#C8EBCC]/50 dark:bg-[#203D24]/50 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] text-[#44634B] dark:text-[#ADCFB1] font-semibold bg-[#EDF5EE] dark:bg-[#203D24] px-1.5 py-0.5 rounded-full">
                 {sleepLogs.length > 0 ? `Nap ${sleepLogs.length} done` : 'Awake'}
               </span>
             </div>
             <div>
-              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight">
+              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight tabular-nums">
                 {sleepHours > 0 ? `${sleepHours}h ${sleepMinsRem}m` : `${totalSleepMinutes || 45}m`}
               </span>
-              <span className="text-xs font-semibold text-[#424842] dark:text-[#9E9892] block">
+              <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] block">
                 Total Rest Today
               </span>
             </div>
@@ -399,19 +399,19 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           {/* Tummy Time Card */}
           <div
             onClick={() => onNavigateTab && onNavigateTab('tummy')}
-            className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 card-interactive cursor-pointer"
+            className="tap-feedback bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col justify-between space-y-2 cursor-pointer"
           >
             <div className="flex items-start justify-between">
-              <div className="w-8 h-8 rounded-full bg-[#FFDDAE] dark:bg-[#3D2C12] flex items-center justify-center text-[#7C5400] dark:text-[#F8BC58]">
+              <div className="w-8 h-8 rounded-full bg-[#FFF6E8] dark:bg-[#3D2C12] flex items-center justify-center text-[#7C5400] dark:text-[#F8BC58]">
                 <Timer className="w-4 h-4" />
               </div>
               <span className="text-[10px] text-[#7C5400] dark:text-[#F8BC58] font-bold">83%</span>
             </div>
             <div>
-              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight">
-                25 <span className="text-xs font-normal text-[#424842] dark:text-[#9E9892]">/ 30m</span>
+              <span className="text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] block leading-tight tabular-nums">
+                25 <span className="text-xs font-normal text-[#75706B] dark:text-[#9E9892]">/ 30m</span>
               </span>
-              <span className="text-xs font-semibold text-[#424842] dark:text-[#9E9892] block">
+              <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] block">
                 Tummy Goal
               </span>
             </div>
@@ -419,7 +419,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               <div className="w-full h-1.5 bg-[#E6E9E4] dark:bg-[#2D382F] rounded-full overflow-hidden">
                 <div className="bg-[#7C5400] dark:bg-[#F8BC58] h-full rounded-full tummy-bar-animate w-[83%]" />
               </div>
-              <div className="flex justify-between items-center text-[9.5px] text-[#424842] dark:text-[#9E9892]">
+              <div className="flex justify-between items-center text-[9.5px] text-[#75706B] dark:text-[#9E9892]">
                 <span>5m left</span>
                 <span className="font-semibold text-[#7C5400] dark:text-[#F8BC58]">almost there</span>
               </div>
@@ -429,7 +429,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
       </div>
 
       {/* 3. Alert / Upcoming Pediatrician Visit Card (Stitch Component) */}
-      <div className="bg-[#F1F4F0] dark:bg-[#19221B] rounded-[24px] p-4 shadow-sm border border-[#E0E3DF] dark:border-[#2D382F] card-interactive">
+      <div className="bg-[#FAF8F5] dark:bg-[#19221B] rounded-2xl p-4 shadow-xs border border-[#E0E3DF] dark:border-[#2D382F]">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[#FFDBD0] dark:bg-[#3E1C12] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shrink-0">
             <Calendar className="w-5 h-5" />
@@ -599,7 +599,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 return (
                   <div
                     key={d.id}
-                    className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3 card-interactive"
+                    className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#C8EBCC]/50 dark:bg-[#203D24]/50 flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1] shrink-0">
                       <Droplets className="w-4 h-4" />
@@ -634,7 +634,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 return (
                   <div
                     key={f.id}
-                    className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3 card-interactive"
+                    className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#FFDBD0]/50 dark:bg-[#3E1C12]/50 flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shrink-0">
                       <Milk className="w-4 h-4" />
@@ -668,7 +668,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               return (
                 <div
                   key={s.id}
-                  className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3 card-interactive"
+                  className="bg-white dark:bg-[#1E2520] p-3 rounded-2xl shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] flex items-center gap-3"
                 >
                   <div className="w-9 h-9 rounded-full bg-[#E6E9E4] dark:bg-[#252D26] flex items-center justify-center text-[#44634B] dark:text-[#ADCFB1] shrink-0">
                     <Moon className="w-4 h-4" />

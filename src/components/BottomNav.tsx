@@ -18,7 +18,6 @@ import {
   Wind,
   Settings,
   Smile,
-  ShieldCheck,
   Check,
 } from 'lucide-react';
 
@@ -69,8 +68,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     'memories',
   ];
 
-  const isSecondaryActive = secondaryTabs.includes(activeTab);
-
   // Dynamic 5th tab config based on active secondary tab
   const getFifthTabInfo = () => {
     switch (activeTab) {
@@ -96,14 +93,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const fifthTab = getFifthTabInfo();
   const FifthIcon = fifthTab.icon;
 
-  // Primary 4 tabs + 1 dynamic More/Active tab
+  // Primary 4 tabs ordered naturally for baby tracking + 1 dynamic 5th slot
   const primaryTabs = [
     {
-      id: 'vaccines' as const,
-      label: 'Vaccines',
-      icon: Syringe,
-      badge: vaccinesDueCount > 0 ? vaccinesDueCount : undefined,
-      isActive: activeTab === 'vaccines',
+      id: 'daily' as const,
+      label: 'Today',
+      icon: Baby,
+      isActive: activeTab === 'daily',
     },
     {
       id: 'growth' as const,
@@ -113,10 +109,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       isActive: activeTab === 'growth',
     },
     {
-      id: 'daily' as const,
-      label: 'Daily Care',
-      icon: Baby,
-      isActive: activeTab === 'daily',
+      id: 'vaccines' as const,
+      label: 'Vaccines',
+      icon: Syringe,
+      badge: vaccinesDueCount > 0 ? vaccinesDueCount : undefined,
+      isActive: activeTab === 'vaccines',
     },
     {
       id: 'doctor' as const,
@@ -225,42 +222,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <>
-      {/* 1. BOTTOM NAVIGATION BAR (Visible on mobile < md) */}
+      {/* 1. NATIVE BOTTOM NAVIGATION BAR (Mobile < md) */}
       <nav
         aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF8F5]/96 dark:bg-[#141317]/96 backdrop-blur-md border-t border-[#EAE6DF] dark:border-[#2D2B33] pb-[env(safe-area-inset-bottom,0px)] transition-colors shadow-lg shadow-black/5"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF8F5]/92 dark:bg-[#141317]/92 backdrop-blur-xl border-t border-[#EAE6DF]/80 dark:border-[#2D2B33]/80 pb-[max(env(safe-area-inset-bottom),8px)] transition-colors select-none"
         suppressHydrationWarning
       >
-        <div className="grid grid-cols-5 h-16 max-w-md mx-auto items-center px-1">
+        <div className="grid grid-cols-5 h-14 max-w-md mx-auto items-center px-1">
           {/* Primary 4 tabs */}
           {primaryTabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => onChangeTab(tab.id)}
-                className={`relative flex flex-col items-center justify-center h-full w-full py-1 transition-[color,transform] duration-150 active:scale-[0.92] select-none ${
+                className={`tap-feedback relative flex flex-col items-center justify-center h-full w-full py-1 ${
                   tab.isActive
-                    ? 'text-[#44634B] dark:text-[#A8D1B0]'
-                    : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-[#FAF8F5]'
+                    ? 'text-[#344738] dark:text-[#A8D1B0]'
+                    : 'text-[#75706B] dark:text-[#9E9892]'
                 }`}
               >
-                {/* Active Indicator Bar */}
-                {tab.isActive && (
-                  <span className="absolute top-0 w-8 h-1 rounded-full bg-[#44634B] dark:bg-[#A8D1B0]" />
-                )}
-
-                {/* Icon Container with Badge */}
+                {/* Active Pill Indicator */}
                 <div className="relative">
-                  <div className={`p-1 rounded-full transition-colors ${tab.isActive ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : ''}`}>
+                  <div
+                    className={`px-3 py-0.5 rounded-full transition-colors duration-150 ${
+                      tab.isActive ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : 'bg-transparent'
+                    }`}
+                  >
                     <Icon
-                      className={`w-5 h-5 transition-transform duration-150 ${
-                        tab.isActive ? 'scale-105 stroke-[2.2]' : 'stroke-[1.75]'
+                      className={`w-5 h-5 transition-transform duration-120 ${
+                        tab.isActive ? 'stroke-[2.2] scale-105' : 'stroke-[1.75]'
                       }`}
                     />
                   </div>
                   {tab.badge !== undefined && (
-                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830]">
+                    <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-bold bg-[#D97757] text-white">
                       {tab.badge}
                     </span>
                   )}
@@ -268,9 +265,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                 {/* Label */}
                 <span
-                  className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 ${
+                  className={`text-[10px] tracking-tight mt-0.5 ${
                     tab.isActive
-                      ? 'font-bold text-[#44634B] dark:text-[#A8D1B0]'
+                      ? 'font-bold text-[#344738] dark:text-[#A8D1B0]'
                       : 'font-medium text-[#75706B] dark:text-[#9E9892]'
                   }`}
                 >
@@ -282,44 +279,44 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
           {/* Dynamic 5th Tab: Active Sub-Page or More Hub */}
           <button
+            type="button"
             onClick={() => setIsSheetOpen((prev) => !prev)}
             aria-label="View all pages and modules"
             aria-expanded={isSheetOpen}
-            className={`relative flex flex-col items-center justify-center h-full w-full py-1 transition-[color,transform] duration-150 active:scale-[0.92] select-none ${
+            className={`tap-feedback relative flex flex-col items-center justify-center h-full w-full py-1 ${
               fifthTab.isSelected || isSheetOpen
-                ? 'text-[#44634B] dark:text-[#A8D1B0]'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-[#FAF8F5]'
+                ? 'text-[#344738] dark:text-[#A8D1B0]'
+                : 'text-[#75706B] dark:text-[#9E9892]'
             }`}
           >
-            {/* Active Indicator Bar */}
-            {(fifthTab.isSelected || isSheetOpen) && (
-              <span className="absolute top-0 w-8 h-1 rounded-full bg-[#44634B] dark:bg-[#A8D1B0]" />
-            )}
-
             <div className="relative">
-              <div className={`p-1 rounded-full transition-colors ${fifthTab.isSelected || isSheetOpen ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : ''}`}>
+              <div
+                className={`px-3 py-0.5 rounded-full transition-colors duration-150 ${
+                  fifthTab.isSelected || isSheetOpen ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : 'bg-transparent'
+                }`}
+              >
                 <FifthIcon
-                  className={`w-5 h-5 transition-transform duration-150 ${
-                    fifthTab.isSelected || isSheetOpen ? 'scale-105 stroke-[2.2]' : 'stroke-[1.75]'
+                  className={`w-5 h-5 transition-transform duration-120 ${
+                    fifthTab.isSelected || isSheetOpen ? 'stroke-[2.2] scale-105' : 'stroke-[1.75]'
                   }`}
                 />
               </div>
               {!fifthTab.isSelected && (
-                <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830]">
+                <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-bold bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#75706B] dark:text-[#9E9892]">
                   7
                 </span>
               )}
             </div>
 
             <span
-              className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 flex items-center gap-0.5 ${
+              className={`text-[10px] tracking-tight mt-0.5 flex items-center gap-0.5 ${
                 fifthTab.isSelected || isSheetOpen
-                  ? 'font-bold text-[#44634B] dark:text-[#A8D1B0]'
+                  ? 'font-bold text-[#344738] dark:text-[#A8D1B0]'
                   : 'font-medium text-[#75706B] dark:text-[#9E9892]'
               }`}
             >
               {fifthTab.label}
-              <span className="text-[9px] opacity-70">▾</span>
+              <span className="text-[8px] opacity-60">▾</span>
             </span>
           </button>
         </div>
@@ -331,47 +328,53 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="All DayOne Pages and Features"
-          className="fixed inset-0 z-50 flex items-end justify-center md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-end justify-center md:hidden animate-reveal"
         >
           {/* Backdrop overlay */}
           <div
             onClick={() => setIsSheetOpen(false)}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/45 backdrop-blur-xs transition-opacity duration-150"
           />
 
           {/* Sliding sheet container */}
-          <div className="relative z-10 w-full max-h-[85vh] bg-[#FAF8F5] dark:bg-[#16151B] rounded-t-3xl border-t border-[#EAE6DF] dark:border-[#2D2B33] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-250">
-            {/* Drag Handle Bar */}
-            <div className="pt-3 pb-1 flex justify-center">
-              <div className="w-12 h-1.5 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44]" />
+          <div
+            className="relative z-10 w-full max-h-[85vh] bg-[#FAF8F5] dark:bg-[#16151B] rounded-t-3xl border-t border-[#EAE6DF] dark:border-[#2D2B33] shadow-2xl flex flex-col overflow-hidden"
+            style={{
+              animation: 'sheetSlideUp 200ms cubic-bezier(0.32, 0.72, 0, 1) both',
+            }}
+          >
+            {/* Native Drag Handle */}
+            <div className="pt-2.5 pb-1 flex justify-center cursor-grab">
+              <div className="w-10 h-1.5 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44]" />
             </div>
 
             {/* Sheet Header */}
-            <div className="px-5 py-3 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
+            <div className="px-4 py-2.5 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
                   <LayoutGrid className="w-4 h-4 text-[#44634B] dark:text-[#A8D1B0]" />
-                  <span>All Pages & Features</span>
+                  <span>All Trackers &amp; Modules</span>
                 </h3>
-                <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] mt-0.5">
-                  12 Pediatric Trackers & Care Modules
+                <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
+                  11 Pediatric health tools &amp; care records
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={() => setIsSheetOpen(false)}
                 aria-label="Close sheet"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[#75706B] dark:text-[#9E9892] hover:bg-[#EAE6DF] dark:hover:bg-[#27252F] transition-colors"
+                className="tap-feedback w-8 h-8 rounded-full flex items-center justify-center text-[#75706B] dark:text-[#9E9892] hover:bg-[#EAE6DF] dark:hover:bg-[#27252F]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Scrollable Page List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-8">
+            <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 pb-10 overscroll-contain">
               {sheetSections.map((section) => (
                 <div key={section.category} className="space-y-1.5">
-                  <h4 className="text-[11px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider px-1">
+                  <h4 className="text-[10.5px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider px-1">
                     {section.category}
                   </h4>
 
@@ -383,19 +386,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       return (
                         <button
                           key={item.id}
+                          type="button"
                           onClick={() => {
                             onChangeTab(item.id);
                             setIsSheetOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between p-3 rounded-2xl text-left border transition-all duration-150 active:scale-[0.98] ${
+                          className={`tap-feedback w-full flex items-center justify-between p-2.5 rounded-2xl text-left border min-h-[44px] ${
                             isCurrent
-                              ? 'bg-white dark:bg-[#201E26] border-[#44634B] shadow-sm ring-1 ring-[#44634B]/20'
+                              ? 'bg-white dark:bg-[#201E26] border-[#44634B] shadow-xs'
                               : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33]'
                           }`}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <div
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
                                 isCurrent
                                   ? 'bg-[#E1EDE4] dark:bg-[#203D24] border-[#C5DCCE] dark:border-[#2E4733] text-[#44634B] dark:text-[#A8D1B0]'
                                   : 'bg-[#F2ECE3] dark:bg-[#26242C] border-[#EAE6DF] dark:border-[#35333C] text-[#75706B] dark:text-[#9E9892]'
@@ -405,19 +409,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                             </div>
 
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
                                 <span className={`text-xs font-semibold truncate ${
                                   isCurrent ? 'text-[#44634B] dark:text-[#A8D1B0]' : 'text-[#201E1D] dark:text-[#FAF8F5]'
                                 }`}>
                                   {item.label}
                                 </span>
                                 {item.badge && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-medium bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830] shrink-0">
+                                  <span className="text-[9.5px] px-1.5 py-0.2 rounded-full font-medium bg-[#FFF0E6] text-[#8A3510] border border-[#FCDCCB] dark:bg-[#2D1F1A] dark:text-[#F8BCA0] dark:border-[#4A322A] shrink-0">
                                     {item.badge}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] truncate mt-0.5">
+                              <p className="text-[10.5px] text-[#75706B] dark:text-[#9E9892] truncate mt-0.5">
                                 {item.desc}
                               </p>
                             </div>
@@ -439,17 +443,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
               {/* Quick Utility Tools Row */}
               <div className="pt-2 border-t border-[#EAE6DF] dark:border-[#2D2B33] space-y-2">
-                <h4 className="text-[11px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider px-1">
+                <h4 className="text-[10.5px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider px-1">
                   Quick Utilities
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
                   {onOpenShusher && (
                     <button
+                      type="button"
                       onClick={() => {
                         setIsSheetOpen(false);
                         onOpenShusher();
                       }}
-                      className="p-2.5 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 active:scale-[0.96] transition-all"
+                      className="tap-feedback p-2 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 min-h-[44px]"
                     >
                       <Wind className="w-4 h-4 text-[#E2765A]" />
                       <span className="text-[10px] font-semibold text-[#201E1D] dark:text-[#FAF8F5]">Shusher</span>
@@ -458,11 +463,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                   {onOpenCelebration && (
                     <button
+                      type="button"
                       onClick={() => {
                         setIsSheetOpen(false);
                         onOpenCelebration();
                       }}
-                      className="p-2.5 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 active:scale-[0.96] transition-all"
+                      className="tap-feedback p-2 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 min-h-[44px]"
                     >
                       <Sparkles className="w-4 h-4 text-[#E2765A]" />
                       <span className="text-[10px] font-semibold text-[#201E1D] dark:text-[#FAF8F5]">Birthday</span>
@@ -471,11 +477,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                   {onOpenSettings && (
                     <button
+                      type="button"
                       onClick={() => {
                         setIsSheetOpen(false);
                         onOpenSettings();
                       }}
-                      className="p-2.5 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 active:scale-[0.96] transition-all"
+                      className="tap-feedback p-2 rounded-xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-center flex flex-col items-center justify-center gap-1 min-h-[44px]"
                     >
                       <Settings className="w-4 h-4 text-[#75706B] dark:text-[#9E9892]" />
                       <span className="text-[10px] font-semibold text-[#201E1D] dark:text-[#FAF8F5]">Settings</span>

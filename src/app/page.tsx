@@ -14,6 +14,7 @@ import {
   Calculator,
   Utensils,
   Award,
+  Smile,
 } from 'lucide-react';
 import { useBabyStore } from '@/lib/store';
 import { Navbar } from '@/components/Navbar';
@@ -50,12 +51,12 @@ export default function Home() {
   const [isShusherOpen, setIsShusherOpen] = useState<boolean>(false);
   const tabScrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active tab pill into view on mobile and desktop
+  // Auto-scroll active tab pill into view on desktop if needed
   useEffect(() => {
     if (!tabScrollRef.current) return;
     const activeBtn = tabScrollRef.current.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`);
     if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      activeBtn.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
     }
   }, [activeTab]);
 
@@ -170,18 +171,17 @@ export default function Home() {
         onChangeTab={setActiveTab}
       />
 
-      {/* Primary Feature Tabs Switcher (Visible on Mobile, Tablet & Desktop) */}
-      <div className="sticky top-14 sm:top-16 z-30 py-1.5 sm:py-2.5 backdrop-blur-md bg-[#FAF8F5]/96 dark:bg-[#141317]/96 border-b border-[#EAE6DF] dark:border-[#2D2B33] transition-colors shadow-xs">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      {/* Primary Feature Tabs Switcher (Visible on Desktop & Tablet; Mobile uses Native Thumb BottomNav) */}
+      <div className="hidden md:block sticky top-14 sm:top-16 z-30 py-2 backdrop-blur-xl bg-[#FAF8F5]/92 dark:bg-[#141317]/92 border-b border-[#EAE6DF]/80 dark:border-[#2D2B33]/80 transition-colors shadow-2xs select-none">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={tabScrollRef}
-            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth overscroll-x-contain"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 overscroll-x-contain"
           >
             <button
               data-tab="daily"
               onClick={() => setActiveTab('daily')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'daily'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'daily'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -193,7 +193,7 @@ export default function Home() {
             <button
               data-tab="growth"
               onClick={() => setActiveTab('growth')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'growth'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'growth'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -209,21 +209,9 @@ export default function Home() {
             </button>
 
             <button
-              data-tab="weaning"
-              onClick={() => setActiveTab('weaning')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'weaning'
-                ? 'bg-primary text-on-primary shadow-xs'
-                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
-                }`}
-            >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>100 Foods Weaning</span>
-            </button>
-
-            <button
               data-tab="vaccines"
               onClick={() => setActiveTab('vaccines')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'vaccines'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'vaccines'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -239,21 +227,33 @@ export default function Home() {
             </button>
 
             <button
-              data-tab="teeth"
-              onClick={() => setActiveTab('teeth')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'teeth'
+              data-tab="weaning"
+              onClick={() => setActiveTab('weaning')}
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'weaning'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
-              <span>🦷</span>
+              <Utensils className="w-3.5 h-3.5" />
+              <span>100 Foods Weaning</span>
+            </button>
+
+            <button
+              data-tab="teeth"
+              onClick={() => setActiveTab('teeth')}
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'teeth'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                }`}
+            >
+              <Smile className="w-3.5 h-3.5" />
               <span>Baby Teeth</span>
             </button>
 
             <button
               data-tab="milestones"
               onClick={() => setActiveTab('milestones')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'milestones'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'milestones'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -265,7 +265,7 @@ export default function Home() {
             <button
               data-tab="tummy"
               onClick={() => setActiveTab('tummy')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'tummy'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'tummy'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -277,7 +277,7 @@ export default function Home() {
             <button
               data-tab="dose"
               onClick={() => setActiveTab('dose')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'dose'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'dose'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -289,7 +289,7 @@ export default function Home() {
             <button
               data-tab="doctor"
               onClick={() => setActiveTab('doctor')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'doctor'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'doctor'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -301,7 +301,7 @@ export default function Home() {
             <button
               data-tab="mom"
               onClick={() => setActiveTab('mom')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'mom'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'mom'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
@@ -313,7 +313,7 @@ export default function Home() {
             <button
               data-tab="memories"
               onClick={() => setActiveTab('memories')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'memories'
+              className={`tap-feedback flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 select-none ${activeTab === 'memories'
                 ? 'bg-primary text-on-primary shadow-xs'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}

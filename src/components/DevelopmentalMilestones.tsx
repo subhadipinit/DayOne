@@ -299,7 +299,7 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
             <div
               key={m.key}
               onClick={() => handleToggleMilestone(m.key)}
-              className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-start gap-3.5 card-interactive ${
+              className={`tap-feedback p-3.5 sm:p-4 rounded-2xl border cursor-pointer flex items-start gap-3.5 ${
                 isDone
                   ? 'bg-white dark:bg-[#1E2520] border-[#44634B]/60 dark:border-[#ADCFB1]/40 shadow-xs'
                   : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F]'

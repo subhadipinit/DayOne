@@ -372,7 +372,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
     <div className="space-y-6 animate-in fade-in duration-150">
 
       {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#F1F4F0] via-[#ECEFEA] to-[#E6E9E4] dark:from-[#1E2520] dark:via-[#191F1A] dark:to-[#161B17] border border-[#E0E3DF] dark:border-[#2D382F] flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-sm">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#1C1B22] border border-[#EAE6DF] dark:border-[#2C2A34] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="p-1.5 rounded-xl bg-[#44634B] text-white">

@@ -199,10 +199,10 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
         {/* Milestone highlight pill */}
         <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F1F4F0] dark:bg-[#1C241E] text-[#191C1A] dark:text-[#FAF8F5] border border-[#E0E3DF] dark:border-[#2D382F]">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base shrink-0">🎉</span>
+            <Sparkles className="w-4 h-4 text-[#D97757] shrink-0" />
             <span className="text-xs font-semibold truncate">
               {eruptedCount > 0
-                ? `First tooth erupted in month 6! Gums developing on track.`
+                ? `First tooth erupted in month 6. Gums developing on track.`
                 : 'Watching for the first lower central incisor budding (typically 6–10m).'}
             </span>
           </div>
@@ -210,15 +210,15 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
         </div>
       </div>
 
-      {/* 2. Interactive Primary Dental Arch Chart (Stitch Architecture) */}
-      <div className="bg-white dark:bg-[#1E2520] rounded-[28px] p-5 shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] space-y-4">
+      {/* 2. Interactive Primary Dental Arch Chart */}
+      <div className="bg-white dark:bg-[#1E2520] rounded-3xl p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-4">
         
         <div className="flex items-center justify-between">
           <div>
             <span className="text-base font-bold text-[#191C1A] dark:text-[#FAF8F5] block">
               Pediatric Dental Arch
             </span>
-            <span className="text-xs text-[#424842] dark:text-[#9E9892]">
+            <span className="text-xs text-[#75706B] dark:text-[#9E9892]">
               Tap any tooth node to view developmental stats or log eruption
             </span>
           </div>
@@ -228,14 +228,14 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
         </div>
 
         {/* Legend Pills */}
-        <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
+        <div className="flex items-center gap-2 flex-wrap text-xs font-semibold select-none">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#44634B] text-white">
             <span className="w-2 h-2 rounded-full bg-white" />
             <span>Erupted ({eruptedCount})</span>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFDDAE] text-[#281800] dark:bg-[#3D2C12] dark:text-[#F8BC58] font-bold">
-            <span className="w-2 h-2 rounded-full bg-[#7C5400] animate-pulse" />
-            <span>Budding / Erupting ({eruptingCount})</span>
+            <span className="w-2 h-2 rounded-full bg-[#7C5400]" />
+            <span>Budding ({eruptingCount})</span>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F1F4F0] dark:bg-[#202822] text-[#424842] dark:text-[#9E9892]">
             <span className="w-2 h-2 rounded-full bg-[#C2C8C0]" />
@@ -244,12 +244,12 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
         </div>
 
         {/* Arch Segment Container */}
-        <div className="p-4 rounded-2xl bg-[#F1F4F0] dark:bg-[#161C17] space-y-6">
+        <div className="p-4 rounded-2xl bg-[#F1F4F0] dark:bg-[#161C17] space-y-5">
           
           {/* Upper Jaw (Maxilla) */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="text-center">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#424842] dark:text-[#9E9892]">
+              <span className="text-[11px] font-semibold text-[#75706B] dark:text-[#9E9892]">
                 Upper Jaw • Maxilla (10)
               </span>
             </div>
@@ -266,7 +266,7 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
                     key={tooth.key}
                     type="button"
                     onClick={() => handleOpenToothModal(tooth)}
-                    className={`h-14 rounded-2xl flex flex-col items-center justify-center p-1 border transition-all active:scale-95 cursor-pointer ${
+                    className={`tap-feedback h-14 rounded-2xl flex flex-col items-center justify-center p-1 border cursor-pointer ${
                       isErupted
                         ? 'bg-[#44634B] text-white border-[#344738] shadow-xs'
                         : isErupting
@@ -304,7 +304,7 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
                     key={tooth.key}
                     type="button"
                     onClick={() => handleOpenToothModal(tooth)}
-                    className={`h-14 rounded-2xl flex flex-col items-center justify-center p-1 border transition-all active:scale-95 cursor-pointer ${
+                    className={`tap-feedback h-14 rounded-2xl flex flex-col items-center justify-center p-1 border cursor-pointer ${
                       isErupted
                         ? 'bg-[#44634B] text-white border-[#344738] shadow-xs'
                         : isErupting

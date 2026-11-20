@@ -417,21 +417,21 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
   const currentSoundMeta = SOUND_OPTIONS.find((s) => s.id === selectedSound)!;
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 right-3 sm:right-4 z-50 max-w-sm w-[calc(100vw-1.5rem)] sm:w-96 animate-in fade-in slide-in-from-bottom-5 duration-200">
-      <div className="bg-[#FAF8F5] dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
+    <div className="fixed bottom-20 md:bottom-4 right-3 sm:right-4 z-50 max-w-sm w-[calc(100vw-1.5rem)] sm:w-96 animate-reveal">
+      <div className="bg-[#FAF8F5] dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-3xl shadow-xl overflow-hidden backdrop-blur-xl">
         
         {/* Header Bar */}
-        <div className="px-4 py-3 bg-gradient-to-r from-[#E2765A]/10 via-rose-500/10 to-amber-500/10 dark:from-[#E2765A]/20 dark:to-amber-500/20 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-tr ${currentSoundMeta.color} text-white shadow-sm ${isPlaying ? 'animate-pulse' : ''}`}>
+        <div className="px-4 py-3 bg-[#F2ECE3]/60 dark:bg-[#201E26]/60 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-[#E1EDE4] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] shadow-2xs`}>
               <Wind className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-                  White Noise & Shusher
+                  White Noise &amp; Shusher
                 </span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-[#E1EDE4] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1]">
                   Offline
                 </span>
               </div>
@@ -444,14 +444,14 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892] transition-colors"
+              className="tap-feedback p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892]"
               title={isMinimized ? 'Expand' : 'Minimize'}
             >
               {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892] transition-colors"
+              className="tap-feedback p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892]"
               title="Close"
             >
               <X className="w-4 h-4" />
@@ -463,14 +463,14 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
         {isMinimized ? (
           <div className="p-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xs font-medium truncate text-[#201E1D] dark:text-[#FAF8F5]">
+              <span className="text-xs font-semibold truncate text-[#201E1D] dark:text-[#FAF8F5]">
                 {currentSoundMeta.name}
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-[#E2765A] text-white flex items-center justify-center hover:bg-[#D26549] transition-all shadow-sm"
+                className="tap-feedback w-8 h-8 rounded-full bg-[#E2765A] text-white flex items-center justify-center hover:bg-[#D26549] shadow-xs"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
@@ -480,14 +480,11 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
           /* Expanded Full Controls */
           <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto no-scrollbar">
             
-            {/* Active Sound Card with Pulsing Visualizer */}
+            {/* Active Sound Card */}
             <div className="relative p-3.5 rounded-2xl bg-white dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between overflow-hidden">
               <div className="flex items-center gap-3 z-10">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${currentSoundMeta.color} flex items-center justify-center text-white shadow-md relative ${isPlaying ? 'scale-105 transition-transform' : ''}`}>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${currentSoundMeta.color} flex items-center justify-center text-white shadow-xs relative`}>
                   <currentSoundMeta.icon className="w-6 h-6" />
-                  {isPlaying && (
-                    <span className="absolute -inset-1 rounded-2xl border-2 border-rose-400/50 animate-ping opacity-60" />
-                  )}
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-[#201E1D] dark:text-white">
@@ -499,13 +496,13 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
                 </div>
               </div>
 
-              {/* Master Play/Pause Large Action Button */}
+              {/* Master Play/Pause Action Button */}
               <button
                 onClick={togglePlay}
-                className={`z-10 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all transform active:scale-95 ${
+                className={`tap-feedback z-10 w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm ${
                   isPlaying
-                    ? 'bg-[#E2765A] hover:bg-[#D26549] shadow-[#E2765A]/25'
-                    : 'bg-[#201E1D] dark:bg-white dark:text-[#201E1D] hover:bg-[#383533]'
+                    ? 'bg-[#E2765A] hover:bg-[#D26549]'
+                    : 'bg-[#201E1D] dark:bg-white dark:text-[#201E1D]'
                 }`}
               >
                 {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}

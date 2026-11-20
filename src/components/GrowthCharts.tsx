@@ -147,7 +147,7 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1.5 bg-[#44634B] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xs hover:bg-[#344738] active:scale-95 transition-all cursor-pointer"
+          className="tap-feedback flex items-center gap-1.5 bg-[#44634B] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xs hover:bg-[#344738] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Log</span>
@@ -155,11 +155,11 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
       </div>
 
       {/* 2. Segmented Metric Switcher (Stitch Pill Style) */}
-      <div className="p-1 bg-[#F1F4F0] dark:bg-[#1C241E] rounded-full flex items-center justify-between gap-1 shadow-inner border border-[#E0E3DF] dark:border-[#2D382F]">
+      <div className="p-1 bg-[#F1F4F0] dark:bg-[#1C241E] rounded-full flex items-center justify-between gap-1 shadow-inner border border-[#E0E3DF] dark:border-[#2D382F] select-none">
         <button
           type="button"
           onClick={() => setActiveMetric('weight')}
-          className={`flex-1 py-2 text-center rounded-full text-xs font-semibold transition-all ${
+          className={`tap-feedback flex-1 py-1.5 text-center rounded-full text-xs font-semibold ${
             activeMetric === 'weight'
               ? 'bg-white dark:bg-[#263129] text-[#44634B] dark:text-[#ADCFB1] shadow-xs'
               : 'text-[#424842] dark:text-[#9E9892] hover:text-[#191C1A]'
@@ -170,7 +170,7 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
         <button
           type="button"
           onClick={() => setActiveMetric('length')}
-          className={`flex-1 py-2 text-center rounded-full text-xs font-semibold transition-all ${
+          className={`tap-feedback flex-1 py-1.5 text-center rounded-full text-xs font-semibold ${
             activeMetric === 'length'
               ? 'bg-white dark:bg-[#263129] text-[#44634B] dark:text-[#ADCFB1] shadow-xs'
               : 'text-[#424842] dark:text-[#9E9892] hover:text-[#191C1A]'
@@ -181,7 +181,7 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
         <button
           type="button"
           onClick={() => setActiveMetric('head')}
-          className={`flex-1 py-2 text-center rounded-full text-xs font-semibold transition-all ${
+          className={`tap-feedback flex-1 py-1.5 text-center rounded-full text-xs font-semibold ${
             activeMetric === 'head'
               ? 'bg-white dark:bg-[#263129] text-[#44634B] dark:text-[#ADCFB1] shadow-xs'
               : 'text-[#424842] dark:text-[#9E9892] hover:text-[#191C1A]'
@@ -191,8 +191,8 @@ export const GrowthCharts: React.FC<GrowthChartsProps> = ({
         </button>
       </div>
 
-      {/* 3. Active Metric Spotlight Card (Stitch Ambient Design) */}
-      <div className="relative overflow-hidden bg-white dark:bg-[#1E2520] rounded-[28px] p-5 shadow-sm border border-[#E8E4DC] dark:border-[#2D382F]">
+      {/* 3. Active Metric Spotlight Card */}
+      <div className="relative overflow-hidden bg-white dark:bg-[#1E2520] rounded-3xl p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F]">
         {/* Ambient organic gradient blurs */}
         <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-[#C8EBCC]/40 dark:bg-[#203D24]/30 blur-2xl pointer-events-none" />
         <div className="absolute -left-6 -bottom-6 w-28 h-28 rounded-full bg-[#FFDBD0]/40 dark:bg-[#52291E]/30 blur-xl pointer-events-none" />

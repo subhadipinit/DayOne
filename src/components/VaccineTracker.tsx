@@ -232,7 +232,7 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
               key={tab.id}
               type="button"
               onClick={() => setFilter(tab.id)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`tap-feedback shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer ${
                 filter === tab.id
                   ? 'bg-[#44634B] text-white shadow-xs'
                   : 'bg-[#F1F4F0] dark:bg-[#202822] text-[#424842] dark:text-[#9E9892] hover:bg-[#E6E9E4]'
@@ -275,7 +275,7 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
                   return (
                     <div
                       key={dose.id}
-                      className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-2.5 card-interactive"
+                      className="bg-white dark:bg-[#1E2520] rounded-2xl p-3.5 sm:p-4 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -303,7 +303,7 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingVaccine(dose)}
-                          className="flex-1 py-1.5 px-3 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#E6E9E4] transition-colors cursor-pointer"
+                          className="tap-feedback flex-1 py-1.5 px-3 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#E6E9E4] cursor-pointer"
                         >
                           <Info className="w-3.5 h-3.5 text-[#424842]" />
                           <span>Pre-check Info</span>
@@ -313,7 +313,7 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
                           <button
                             type="button"
                             onClick={() => handleQuickMarkGiven(dose.id, dose.name)}
-                            className="flex-1 py-1.5 px-3 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-semibold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
+                            className="tap-feedback flex-1 py-1.5 px-3 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-semibold flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>Log Dose</span>
@@ -322,7 +322,7 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
                           <button
                             type="button"
                             onClick={() => setEditingVaccine(dose)}
-                            className="py-1.5 px-3 rounded-full text-xs font-semibold text-[#44634B] hover:underline"
+                            className="tap-feedback py-1.5 px-3 rounded-full text-xs font-semibold text-[#44634B] dark:text-[#ADCFB1] hover:underline"
                           >
                             Edit
                           </button>
