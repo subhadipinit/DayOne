@@ -37,47 +37,7 @@ export const INITIAL_DOCTOR_QUESTIONS: DoctorQuestion[] = [];
 export const INITIAL_SYMPTOMS: SymptomLog[] = [];
 export const INITIAL_PRESCRIPTIONS: Prescription[] = [];
 export const INITIAL_TUMMY_TIME: TummyTimeSession[] = [];
-export const INITIAL_MEDICINE_LOGS: MedicationDoseLog[] = [
-  {
-    id: 'med_init_1',
-    childId: 'child_1',
-    timestamp: '2026-11-19T08:30:00.000Z',
-    medicineName: "Dr. Reddy's Kidrich D3 Drops (Cholecalciferol 400 IU / 0.5 ml)",
-    brandName: "Dr. Reddy's Kidrich D3 Drops",
-    category: 'supplement',
-    weightKgAtTime: 4.8,
-    dosageMl: 0.5,
-    reason: 'Daily Morning Supplement',
-    administeredBy: 'Mom 👩',
-    notes: "Given 0.5 ml (400 IU) with calibrated dropper after morning feed for bone mineralization and immune health.",
-  },
-  {
-    id: 'med_init_2',
-    childId: 'child_1',
-    timestamp: '2026-11-19T08:45:00.000Z',
-    medicineName: 'Bavon Drops (Pediatric Multivitamin, B-Complex & L-Lysine)',
-    brandName: 'Bavon Drops',
-    category: 'supplement',
-    weightKgAtTime: 4.8,
-    dosageMl: 0.5,
-    reason: 'Daily Morning Supplement',
-    administeredBy: 'Mom 👩',
-    notes: 'Given 0.5 ml post-feed for appetite support, metabolic growth, and micronutrient balance.',
-  },
-  {
-    id: 'med_init_3',
-    childId: 'child_1',
-    timestamp: '2026-11-18T19:15:00.000Z',
-    medicineName: 'Colimex DF Drops (Wallace - Simethicone 40 mg/ml Dill Free)',
-    brandName: 'Colimex DF Drops (Wallace)',
-    category: 'colic',
-    weightKgAtTime: 4.8,
-    dosageMl: 0.3,
-    reason: 'Colic & Trapped Gas',
-    administeredBy: 'Dad 👨',
-    notes: 'Administered 6 drops (~0.3 ml) 15 min before feed for evening fussiness and trapped colic gas. Calmed within 20 mins.',
-  },
-];
+export const INITIAL_MEDICINE_LOGS: MedicationDoseLog[] = [];
 export const INITIAL_MOM_CARE: MomCareEntry[] = [];
 
 export function getInitialVaccines(dob: string, childId: string) {

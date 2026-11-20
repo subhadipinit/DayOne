@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Calculator,
   AlertTriangle,
@@ -254,20 +255,58 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
   const [doseTime, setDoseTime] = useState<string>(() => new Date().toISOString().slice(0, 16));
   const [copiedHistory, setCopiedHistory] = useState<boolean>(false);
 
-  // Stored dose history
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Lock body scroll and handle Escape key when log dose modal is open
+  useEffect(() => {
+    if (showLogModal) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setShowLogModal(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showLogModal]);
+
+  // Stored dose history (starts empty, purges any legacy dummy mock logs)
   const [medHistory, setMedHistory] = useState<MedicineDoseLog[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem(`dayone_med_history_${profile.id}`);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) {
+            // Filter out any legacy initial dummy mock items (e.g. med_init_1, med_init_2, med_init_3)
+            const realLogs = parsed.filter(
+              (m: any) =>
+                m &&
+                m.id &&
+                !m.id.startsWith('med_init_') &&
+                !m.medicineName?.includes('Kidrich') &&
+                !m.brandName?.includes('Kidrich') &&
+                !m.medicineName?.includes('Bavon') &&
+                !m.brandName?.includes('Colimex')
+            );
+            if (realLogs.length !== parsed.length) {
+              localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(realLogs));
+            }
+            return realLogs;
+          }
         }
       } catch {
         // fallback
       }
     }
-    return INITIAL_MEDICINE_LOGS;
+    return [];
   });
 
   // Active formulation
@@ -452,7 +491,7 @@ _Generated via DayOne Dose Assistant_`;
   const syringePercent = Math.min(100, Math.max(8, (syringeDisplayMl / 10) * 100));
 
   return (
-    <div className="space-y-4 sm:space-y-5 animate-reveal">
+    <div className="space-y-4 sm:space-y-5">
       {/* 1. Header with Safety Context */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div>
@@ -929,9 +968,14 @@ _Generated via DayOne Dose Assistant_`;
       </div>
 
       {/* 8. Log Dose Modal */}
-      {showLogModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4">
-          <div className="w-full max-w-md bg-white dark:bg-[#1E2520] rounded-t-[28px] sm:rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150">
+      {isMounted && showLogModal && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowLogModal(false);
+          }}
+        >
+          <div className="w-full max-w-md bg-white dark:bg-[#1E2520] rounded-t-[28px] sm:rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom,0px),20px)] animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150">
             <div className="w-10 h-1 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto mb-1 sm:hidden" />
 
             <div className="flex items-center justify-between border-b border-[#E8E4DC] dark:border-[#2D382F] pb-3">
@@ -1056,7 +1100,8 @@ _Generated via DayOne Dose Assistant_`;
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
