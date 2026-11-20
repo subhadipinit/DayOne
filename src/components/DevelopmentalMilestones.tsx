@@ -182,7 +182,7 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
                 strokeDasharray={2 * Math.PI * 22}
                 strokeDashoffset={2 * Math.PI * 22 * (1 - bracketPercent / 100)}
                 strokeLinecap="round"
-                className="text-indigo-600 transition-all duration-500"
+                className="text-[#44634B] dark:text-[#ADCFB1] transition-all duration-500"
               />
             </svg>
             <span className="absolute text-[11px] font-bold text-[#201E1D] dark:text-[#FAF8F5]">
@@ -197,7 +197,7 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
             <div className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
               {achievedInBracket} / {currentBracketMilestones.length} Achieved
             </div>
-            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">
+            <div className="text-[10px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
               {bracketPercent === 100 ? '🎉 All Milestones Met!' : `${currentBracketMilestones.length - achievedInBracket} leaps in progress`}
             </div>
           </div>
@@ -217,7 +217,7 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
               onClick={() => setSelectedAge(age)}
               className={`px-4 py-2 rounded-2xl border text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 isSelected
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  ? 'bg-[#44634B] text-white border-[#44634B] shadow-xs'
                   : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >

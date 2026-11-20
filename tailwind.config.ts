@@ -10,6 +10,50 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Stitch "Nurturing Daylight" Design System Tokens
+        primary: {
+          DEFAULT: "#44634B",
+          container: "#5C7C62",
+          fixed: "#C8EBCC",
+          "fixed-dim": "#ADCFB1",
+          dark: "#ADCFB1",
+        },
+        secondary: {
+          DEFAULT: "#99462A",
+          container: "#FE9572",
+          fixed: "#FFDBD0",
+          "fixed-dim": "#FFB59E",
+          dark: "#FFB59E",
+        },
+        tertiary: {
+          DEFAULT: "#7C5400",
+          container: "#9C6B04",
+          fixed: "#FFDDAE",
+          "fixed-dim": "#F8BC58",
+          dark: "#F8BC58",
+        },
+        surface: {
+          DEFAULT: "#F7FAF5",
+          dim: "#D8DBD6",
+          bright: "#F7FAF5",
+          container: "#ECEFEA",
+          "container-low": "#F1F4F0",
+          "container-high": "#E6E9E4",
+          "container-highest": "#E0E3DF",
+          "container-lowest": "#FFFFFF",
+        },
+        "on-surface": {
+          DEFAULT: "#191C1A",
+          variant: "#424842",
+        },
+        "on-primary": {
+          DEFAULT: "#FFFFFF",
+          fixed: "#03210E",
+        },
+        "on-secondary": {
+          DEFAULT: "#FFFFFF",
+          fixed: "#390B00",
+        },
         pastel: {
           canvas: "#FAF8F5",
           card: "#FFFFFF",

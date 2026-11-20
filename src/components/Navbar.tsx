@@ -180,13 +180,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               aria-expanded={isChildMenuOpen}
               aria-haspopup="true"
               className={`group flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full border transition-all duration-150 active:scale-[0.98] ${isChildMenuOpen
-                ? 'bg-white dark:bg-[#1D1C22] border-[#E2765A] shadow-sm ring-2 ring-[#E2765A]/15'
+                ? 'bg-white dark:bg-[#1D1C22] border-[#44634B] shadow-sm ring-2 ring-[#44634B]/15'
                 : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D5CFCE] dark:hover:border-[#3D3B44]'
                 }`}
             >
               {/* Child Initial Avatar Token */}
-              <div className="w-7 h-7 rounded-full bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-[#8A3510] dark:text-[#F8BCA0] leading-none">
+              <div className="w-7 h-7 rounded-full bg-[#E1EDE4] dark:bg-[#203D24] border border-[#C5DCCE] dark:border-[#2E4733] flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-[#344738] dark:text-[#A8D1B0] leading-none">
                   {initial}
                 </span>
               </div>
@@ -205,7 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Chevron icon with animated rotation */}
               <ChevronDown
-                className={`w-3.5 h-3.5 text-[#75706B] dark:text-[#9E9892] group-hover:text-[#201E1D] dark:group-hover:text-[#FAF8F5] transition-transform duration-200 shrink-0 ${isChildMenuOpen ? 'rotate-180 text-[#E2765A]' : ''
+                className={`w-3.5 h-3.5 text-[#75706B] dark:text-[#9E9892] group-hover:text-[#201E1D] dark:group-hover:text-[#FAF8F5] transition-transform duration-200 shrink-0 ${isChildMenuOpen ? 'rotate-180 text-[#44634B]' : ''
                   }`}
               />
             </button>
@@ -219,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
                     Baby Profiles ({profilesList.length})
                   </span>
-                  <span className="text-[10px] font-medium text-[#E2765A] bg-[#FFF0E6] dark:bg-[#2D2422] px-2 py-0.5 rounded-full border border-[#FCDCCB] dark:border-[#543830]">
+                  <span className="text-[10px] font-medium text-[#44634B] bg-[#E1EDE4] dark:bg-[#203D24] dark:text-[#A8D1B0] px-2 py-0.5 rounded-full border border-[#C5DCCE] dark:border-[#2E4733]">
                     Active
                   </span>
                 </div>
@@ -240,13 +240,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setIsChildMenuOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors duration-150 ${isSelected
-                          ? 'bg-[#FFF7F2] dark:bg-[#261E1C] text-[#201E1D] dark:text-[#FAF8F5]'
+                          ? 'bg-[#F2F7F3] dark:bg-[#1C281E] text-[#201E1D] dark:text-[#FAF8F5]'
                           : 'hover:bg-[#F7F4EE] dark:hover:bg-[#232129] text-[#4D4845] dark:text-[#DDD8D0]'
                           }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${isSelected
-                            ? 'bg-[#FFF0E6] dark:bg-[#2D2422] border-[#FCDCCB] dark:border-[#543830] text-[#8A3510] dark:text-[#F8BCA0]'
+                            ? 'bg-[#E1EDE4] dark:bg-[#203D24] border-[#C5DCCE] dark:border-[#2E4733] text-[#344738] dark:text-[#A8D1B0]'
                             : 'bg-[#F2ECE3] dark:bg-[#26242C] border-[#EAE6DF] dark:border-[#35333C] text-[#75706B] dark:text-[#9E9892]'
                             }`}>
                             <span className="text-xs font-bold leading-none">{pInitial}</span>
@@ -263,7 +263,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
 
                         {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-[#E2765A] text-white flex items-center justify-center shrink-0 ml-2">
+                          <div className="w-5 h-5 rounded-full bg-[#44634B] text-white flex items-center justify-center shrink-0 ml-2">
                             <Check className="w-3 h-3 stroke-[2.5]" />
                           </div>
                         )}
@@ -280,9 +280,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsChildMenuOpen(false);
                       onOpenSettings();
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#8A3510] dark:text-[#F8BCA0] hover:bg-[#FFF0E6] dark:hover:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#44634B] dark:text-[#A8D1B0] hover:bg-[#E1EDE4] dark:hover:bg-[#203D24] border border-[#C5DCCE] dark:border-[#2E4733] transition-colors duration-150 active:scale-[0.98]"
                   >
-                    <Plus className="w-3.5 h-3.5 text-[#E2765A]" />
+                    <Plus className="w-3.5 h-3.5 text-[#44634B]" />
                     <span>Add Child / Manage Profiles</span>
                   </button>
                 </div>
@@ -533,11 +533,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             if (onChangeTab) onChangeTab(page.id);
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
-                            isCurrent
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${isCurrent
                               ? 'bg-[#FFF0E6] dark:bg-[#2D2422] text-[#8A3510] dark:text-[#F8BCA0] font-semibold border border-[#FCDCCB] dark:border-[#543830]'
                               : 'text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F7F4EE] dark:hover:bg-[#232129]'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <PageIcon className={`w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-[#E2765A]' : 'text-[#75706B] dark:text-[#9E9892]'}`} />
@@ -593,11 +592,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium hover:bg-[#F7F4EE] dark:hover:bg-[#232129]"
                   >
                     <span className="text-[#4D4845] dark:text-[#DDD8D0]">Role Mode</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                      userRole === 'parent'
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${userRole === 'parent'
                         ? 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB]'
                         : 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1]'
-                    }`}>
+                      }`}>
                       {userRole === 'parent' ? 'Parent (Admin)' : 'Family (View)'}
                     </span>
                   </button>
@@ -636,5 +634,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       </div>
     </header>
+  );
+};
   );
 };

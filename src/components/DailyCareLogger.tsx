@@ -17,6 +17,11 @@ import {
   Sparkles,
   Utensils,
   Heart,
+  Calendar,
+  ChevronRight,
+  ArrowRight,
+  Timer,
+  Check,
 } from 'lucide-react';
 import { FeedingLog, DiaperLog, SleepLog } from '@/lib/types';
 import { ActiveTab } from './BottomNav';
@@ -57,7 +62,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
 
   // --- MANUAL BOTTLE FORM ---
-  const [bottleMl, setBottleMl] = useState<string>('60');
+  const [bottleMl, setBottleMl] = useState<string>('120');
   const [showBottleModal, setShowBottleModal] = useState<boolean>(false);
 
   // --- MANUAL SLEEP FORM ---
@@ -146,6 +151,24 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
     });
   };
 
+  // --- STATS CALCULATIONS ---
+  const lastFeed = feedingLogs[feedingLogs.length - 1];
+  const lastDiaper = diaperLogs[diaperLogs.length - 1];
+  const wetCount = diaperLogs.filter((d) => d.type === 'wet' || d.type === 'both').length;
+  const dirtyCount = diaperLogs.filter((d) => d.type === 'dirty' || d.type === 'both').length;
+  const totalSleepMinutes = sleepLogs.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const sleepHours = Math.floor(totalSleepMinutes / 60);
+  const sleepMinsRem = totalSleepMinutes % 60;
+
+  const getTimeAgo = (dateStr?: string) => {
+    if (!dateStr) return 'No feeds yet';
+    const diffMin = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60)));
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return `${h}h ${m}m ago`;
+  };
+
   // Combine care timeline events with normalized time
   const careTimeline = [
     ...feedingLogs.map((f) => ({ ...f, eventType: 'feed' as const, time: f.timestamp })),
@@ -155,43 +178,240 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Quick Routine Navigation Chips (Mobile & Desktop) */}
-      {onNavigateTab && (
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
-          <span className="text-[#75706B] dark:text-[#9E9892] text-[11px] font-semibold uppercase tracking-wider shrink-0">
-            Related:
+      {/* 1. Quick Log Action Grid (Direct from Stitch Mockup) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="text-sm font-semibold tracking-tight text-on-surface dark:text-[#FAF8F5]">
+            Quick Log
+          </h2>
+          <span className="text-[11px] font-medium text-on-surface-variant dark:text-[#9E9892]">
+            Tap to record
           </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2.5">
+          {/* Feeding Action Button */}
           <button
             type="button"
-            onClick={() => onNavigateTab('weaning')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+            onClick={() => {
+              if (activeSide) {
+                setIsTimerRunning(!isTimerRunning);
+              } else {
+                handleStartTimer('left');
+              }
+            }}
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] hover:bg-[#FCDCCB]/60 active:scale-95 transition-all text-center gap-1.5 shadow-xs group"
           >
-            <Utensils className="w-3.5 h-3.5 text-[#E2765A]" />
-            <span>First Foods & Weaning (6M+)</span>
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-[#1D1C22] flex items-center justify-center text-[#D97757] shadow-xs group-hover:scale-105 transition-transform">
+              <Milk className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-on-surface dark:text-[#FAF8F5]">
+              Feeding
+            </span>
           </button>
+
+          {/* Diaper Action Button */}
           <button
             type="button"
-            onClick={() => onNavigateTab('tummy')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+            onClick={() => handleQuickDiaper('wet')}
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#EDF5EE] dark:bg-[#1F2B21] border border-[#CFE2D1] dark:border-[#2D4231] hover:bg-[#CFE2D1]/60 active:scale-95 transition-all text-center gap-1.5 shadow-xs group"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#E2765A]" />
-            <span>Tummy Time Coach</span>
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-[#1D1C22] flex items-center justify-center text-[#44634B] shadow-xs group-hover:scale-105 transition-transform">
+              <Droplets className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-on-surface dark:text-[#FAF8F5]">
+              Diaper
+            </span>
           </button>
+
+          {/* Sleep Action Button */}
           <button
             type="button"
-            onClick={() => onNavigateTab('mom')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#E2765A] text-[#4D4845] dark:text-[#DDD8D0] font-medium shrink-0 transition-colors active:scale-[0.97]"
+            onClick={handleSaveSleep}
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#F4F0FB] dark:bg-[#221C2B] border border-[#E0D4F5] dark:border-[#372A4A] hover:bg-[#E0D4F5]/60 active:scale-95 transition-all text-center gap-1.5 shadow-xs group"
           >
-            <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" />
-            <span>Mom Care</span>
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-[#1D1C22] flex items-center justify-center text-[#8E6DC5] shadow-xs group-hover:scale-105 transition-transform">
+              <Moon className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-on-surface dark:text-[#FAF8F5]">
+              Sleep
+            </span>
+          </button>
+
+          {/* Tummy Time Action Button */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab && onNavigateTab('tummy')}
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FDF6E2] dark:bg-[#2A2318] border border-[#F6E6B8] dark:border-[#4B3C23] hover:bg-[#F6E6B8]/60 active:scale-95 transition-all text-center gap-1.5 shadow-xs group"
+          >
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-[#1D1C22] flex items-center justify-center text-[#D4A02A] shadow-xs group-hover:scale-105 transition-transform">
+              <Timer className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-on-surface dark:text-[#FAF8F5]">
+              Tummy
+            </span>
           </button>
         </div>
-      )}
-      
-      {/* Top 3 Gentle Pastel Action Bento Panels */}
+      </div>
+
+      {/* 2. Today at a Glance Bento Grid (Direct from Stitch Mockup) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="text-sm font-semibold tracking-tight text-on-surface dark:text-[#FAF8F5]">
+            Today at a Glance
+          </h2>
+          <div className="flex items-center gap-1 bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] px-2.5 py-0.5 rounded-full">
+            <CheckCircle className="w-3 h-3 text-[#44634B]" />
+            <span className="text-[11px] font-bold">Goal 85%</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* Card 1: Last Feed */}
+          <div className="bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-[#FFF0E6] dark:bg-[#2D2422] flex items-center justify-center text-[#D97757]">
+                <Milk className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[11px] font-medium text-on-surface-variant dark:text-[#9E9892]">
+                {getTimeAgo(lastFeed?.timestamp)}
+              </span>
+            </div>
+            <div>
+              <span className="text-xl font-bold text-on-surface dark:text-[#FAF8F5] block leading-tight">
+                {lastFeed?.type === 'bottle' ? `${lastFeed.bottleAmountMl} ml` : 'Nursing'}
+              </span>
+              <span className="text-xs font-medium text-[#D97757] block">
+                {lastFeed?.type === 'bottle' ? 'Expressed / Formula' : 'Breastmilk'}
+              </span>
+            </div>
+            <div className="bg-[#FAF8F5] dark:bg-[#17161B] px-2 py-1 rounded-xl flex items-center gap-1 text-on-surface-variant dark:text-[#9E9892]">
+              <Check className="w-3 h-3 text-[#D97757]" />
+              <span className="text-[10px] truncate">
+                {lastFeed ? lastFeed.notes || 'Routine Feed' : 'Ready for next feed'}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Diapers */}
+          <div className="bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-[#EDF5EE] dark:bg-[#1F2B21] flex items-center justify-center text-[#44634B]">
+                <Droplets className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[11px] font-medium text-on-surface-variant dark:text-[#9E9892]">
+                {getTimeAgo(lastDiaper?.timestamp)}
+              </span>
+            </div>
+            <div>
+              <span className="text-xl font-bold text-on-surface dark:text-[#FAF8F5] block leading-tight">
+                {diaperLogs.length} Changed
+              </span>
+              <span className="text-xs font-medium text-[#44634B] block">
+                {wetCount} Wet, {dirtyCount} Dirty
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 py-1 px-1">
+              {Array.from({ length: Math.min(5, diaperLogs.length || 1) }).map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`w-2 h-2 rounded-full ${
+                    idx < wetCount ? 'bg-[#44634B]' : 'bg-[#D97757]'
+                  }`}
+                />
+              ))}
+              <span className="text-[10px] text-on-surface-variant dark:text-[#9E9892] ml-auto font-medium">
+                Healthy
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3: Sleep */}
+          <div className="bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-[#F4F0FB] dark:bg-[#221C2B] flex items-center justify-center text-[#8E6DC5]">
+                <Moon className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[10px] font-bold bg-[#EDF5EE] dark:bg-[#1F2B21] text-[#44634B] dark:text-[#ADCFB1] px-1.5 py-0.5 rounded-full">
+                {sleepLogs.length > 0 ? `Nap ${sleepLogs.length} done` : 'Rest window'}
+              </span>
+            </div>
+            <div>
+              <span className="text-xl font-bold text-on-surface dark:text-[#FAF8F5] block leading-tight">
+                {sleepHours > 0 ? `${sleepHours}h ` : ''}{sleepMinsRem}m
+              </span>
+              <span className="text-xs font-medium text-on-surface-variant dark:text-[#9E9892] block">
+                Total Rest Today
+              </span>
+            </div>
+            <div className="bg-[#FAF8F5] dark:bg-[#17161B] px-2 py-1 rounded-xl flex items-center justify-between text-on-surface-variant dark:text-[#9E9892]">
+              <span className="text-[10px]">Next wake window:</span>
+              <span className="text-[10px] font-bold text-on-surface dark:text-[#FAF8F5]">~1h 15m</span>
+            </div>
+          </div>
+
+          {/* Card 4: Tummy Time */}
+          <div className="bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-[#FDF6E2] dark:bg-[#2A2318] flex items-center justify-center text-[#D4A02A]">
+                <Timer className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-[11px] font-bold text-[#D4A02A]">83%</span>
+            </div>
+            <div>
+              <span className="text-xl font-bold text-on-surface dark:text-[#FAF8F5] block leading-tight">
+                25 <span className="text-xs font-normal text-on-surface-variant dark:text-[#9E9892]">/ 30m</span>
+              </span>
+              <span className="text-xs font-medium text-on-surface-variant dark:text-[#9E9892] block">
+                Tummy Goal
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="w-full h-1.5 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full overflow-hidden">
+                <div className="bg-[#D4A02A] h-full rounded-full w-[83%]" />
+              </div>
+              <div className="flex justify-between items-center text-[10px] text-on-surface-variant dark:text-[#9E9892]">
+                <span>5m to goal</span>
+                <span className="font-semibold text-[#D4A02A]">almost there</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Alert / Upcoming Pediatrician Visit Card (Direct from Stitch Mockup) */}
+      <div className="bg-[#F1F4F0] dark:bg-[#1A241C] border border-[#CFE2D1] dark:border-[#2D4231] rounded-2xl p-4 shadow-xs relative overflow-hidden">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[#FFDBD0] dark:bg-[#3D251C] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shrink-0">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#99462A] dark:text-[#FFB59E] block">
+              Upcoming Visit
+            </span>
+            <h3 className="text-sm font-bold text-on-surface dark:text-[#FAF8F5] leading-snug mt-0.5">
+              6-Month Pediatrician Checkup & Vaccines
+            </h3>
+            <p className="text-xs text-on-surface-variant dark:text-[#9E9892] mt-0.5">
+              Next Tuesday, 10:00 AM • Dr. Morrison at Westside Pediatrics
+            </p>
+            <div className="mt-2.5">
+              <button
+                type="button"
+                onClick={() => onNavigateTab && onNavigateTab('vaccines')}
+                className="inline-flex items-center gap-1.5 bg-[#44634B] hover:bg-[#38533E] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold active:scale-[0.97] transition-all shadow-xs"
+              >
+                <span>View Details & Records</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Action Bento Panels: Detailed Nursing, Diapers & Sleep */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        
-        {/* 1. Breastfeeding Stopwatch Timer Panel */}
+        {/* Nursing Timer Panel */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -208,10 +428,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               </span>
             </div>
 
-            {/* Timers Display */}
             <div className="grid grid-cols-2 gap-2.5 mb-4">
-              
-              {/* Left Side */}
               <div
                 onClick={() => userRole === 'parent' && handleStartTimer('left')}
                 className={`cursor-pointer p-3.5 rounded-xl border text-center transition-all duration-150 ${
@@ -235,7 +452,6 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 )}
               </div>
 
-              {/* Right Side */}
               <div
                 onClick={() => userRole === 'parent' && handleStartTimer('right')}
                 className={`cursor-pointer p-3.5 rounded-xl border text-center transition-all duration-150 ${
@@ -258,11 +474,9 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                   </span>
                 )}
               </div>
-
             </div>
           </div>
 
-          {/* Timer Controls */}
           {userRole === 'parent' ? (
             <div className="space-y-2">
               <div className="flex gap-2">
@@ -277,7 +491,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 ) : (
                   <button
                     onClick={() => handleStartTimer(activeSide || 'left')}
-                    className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] shadow-xs flex items-center justify-center gap-1.5 transition-colors duration-150 active:scale-[0.98]"
+                    className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-[#44634B] text-white hover:bg-[#38533E] shadow-xs flex items-center justify-center gap-1.5 transition-colors duration-150 active:scale-[0.98]"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>{leftSeconds > 0 || rightSeconds > 0 ? 'Resume' : 'Start Timer'}</span>
@@ -314,7 +528,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           )}
         </div>
 
-        {/* 2. Diaper Quick-Log Panel (Pastel Color-Coded) */}
+        {/* Diaper Quick-Log Panel */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -373,7 +587,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           </div>
         </div>
 
-        {/* 3. Sleep & Nap Tracker Panel (Pastel Lavender) */}
+        {/* Sleep Tracker Panel */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -434,22 +648,26 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
 
           <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-center">
             <span className="text-xs text-[#75706B] dark:text-[#9E9892]">
-              Total Recorded Rest: <span className="font-bold text-[#201E1D] dark:text-[#FAF8F5]">{sleepLogs.reduce((acc, s) => acc + (s.durationMinutes || 0), 0)} min</span>
+              Total Recorded Rest: <span className="font-bold text-[#201E1D] dark:text-[#FAF8F5]">{totalSleepMinutes} min</span>
             </span>
           </div>
         </div>
-
       </div>
 
-      {/* Recent Care History Timeline (Clean Editorial List) */}
+      {/* 5. Recent Care History Timeline */}
       <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs">
-        <h4 className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] mb-3 uppercase tracking-wider">
-          Daily Care Log ({careTimeline.length})
-        </h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
+            Recent Activity ({careTimeline.length})
+          </h4>
+          <span className="text-[11px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
+            Chronological
+          </span>
+        </div>
 
         {careTimeline.length === 0 ? (
           <p className="text-xs text-[#75706B] text-center py-5">
-            No entries logged today yet. Record feeds or changes above.
+            No entries logged today yet. Record feeds, diapers, or naps above.
           </p>
         ) : (
           <div className="divide-y divide-[#EAE6DF] dark:divide-[#2D2B33]">
@@ -465,23 +683,25 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                   className="flex items-center justify-between py-2.5 text-xs transition-colors duration-150 hover:bg-[#FAF8F5] dark:hover:bg-[#17161B] px-2 rounded-xl"
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      ev.eventType === 'feed'
-                        ? 'bg-[#FFF0E6] text-[#E2765A]'
-                        : ev.eventType === 'diaper'
-                        ? 'bg-[#EEF5FC] text-[#5393CE]'
-                        : 'bg-[#F4F0FB] text-[#8E6DC5]'
-                    }`}>
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        ev.eventType === 'feed'
+                          ? 'bg-[#FFF0E6] dark:bg-[#2D2422] text-[#D97757]'
+                          : ev.eventType === 'diaper'
+                          ? 'bg-[#EDF5EE] dark:bg-[#1F2B21] text-[#44634B]'
+                          : 'bg-[#F4F0FB] dark:bg-[#221C2B] text-[#8E6DC5]'
+                      }`}
+                    >
                       {ev.eventType === 'feed' ? (
-                        <Milk className="w-3.5 h-3.5" />
+                        <Milk className="w-4 h-4" />
                       ) : ev.eventType === 'diaper' ? (
-                        <Droplets className="w-3.5 h-3.5" />
+                        <Droplets className="w-4 h-4" />
                       ) : (
-                        <Moon className="w-3.5 h-3.5" />
+                        <Moon className="w-4 h-4" />
                       )}
                     </span>
                     <div>
-                      <p className="font-medium text-[#201E1D] dark:text-[#FAF8F5]">
+                      <p className="font-semibold text-on-surface dark:text-[#FAF8F5]">
                         {ev.eventType === 'feed'
                           ? ev.type === 'breast'
                             ? `Breastfeeding • ${ev.leftDurationMinutes || 0}m L / ${ev.rightDurationMinutes || 0}m R`
@@ -490,7 +710,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                           ? `Diaper Change • ${ev.type}`
                           : `Nap • ${ev.durationMinutes} min`}
                       </p>
-                      <p className="text-[10px] text-[#75706B] dark:text-[#9E9892]">{dateStr}</p>
+                      <p className="text-[11px] text-on-surface-variant dark:text-[#9E9892]">{dateStr}</p>
                     </div>
                   </div>
 
@@ -499,9 +719,8 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                       onClick={() => {
                         if (ev.eventType === 'feed') onDeleteFeedingLog(ev.id);
                         else if (ev.eventType === 'diaper') onDeleteDiaperLog(ev.id);
-                        else if (ev.eventType === 'sleep') onAddSleepLog({ childId, startTime: '', endTime: '', durationMinutes: 0 });
                       }}
-                      className="p-1 text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A] transition-colors duration-150"
+                      className="p-1.5 text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A] transition-colors rounded-lg"
                       title="Delete entry"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -514,19 +733,18 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
         )}
       </div>
 
-      {/* Bottle Feeding Modal (Mobile Bottom-Sheet & Desktop Centered) */}
+      {/* Bottle Feeding Modal */}
       {showBottleModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="relative w-full max-w-sm rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border-t sm:border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
-            {/* Mobile Sheet Drag Pill */}
             <div className="sm:hidden w-10 h-1 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44] mx-auto mb-3" />
 
-            <h4 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] mb-2">
+            <h4 className="text-sm font-bold text-on-surface dark:text-[#FAF8F5] mb-2">
               Log Bottle Feed
             </h4>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-[#75706B] dark:text-[#9E9892] mb-1 font-semibold">
+                <label className="block text-xs text-on-surface-variant dark:text-[#9E9892] mb-1 font-semibold">
                   Volume (ml)
                 </label>
                 <input
@@ -535,7 +753,7 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                   inputMode="numeric"
                   value={bottleMl}
                   onChange={(e) => setBottleMl(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm font-semibold bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm font-semibold bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-on-surface dark:text-[#FAF8F5]"
                 />
               </div>
 
@@ -543,14 +761,14 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowBottleModal(false)}
-                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveBottle}
-                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-[#44634B] text-white hover:bg-[#38533E] transition-colors active:scale-[0.98]"
                 >
                   Save Feed
                 </button>
@@ -559,7 +777,6 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };

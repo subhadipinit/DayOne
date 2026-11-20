@@ -644,7 +644,7 @@ _Generated via DayOne Baby Care Vault_`;
               activeCategory === cat.id
                 ? cat.id === 'baby_regimen'
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-[#44634B] text-white shadow-xs'
                 : 'bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
             }`}
           >

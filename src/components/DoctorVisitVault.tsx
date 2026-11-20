@@ -209,7 +209,7 @@ _Sent via DayOne Baby Health Vault_`;
 
           <button
             onClick={handleExportPdf}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#E2765A] hover:bg-[#CB6145] text-white font-semibold text-xs shadow-xs transition-colors duration-150 active:scale-[0.98]"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#44634B] hover:bg-[#38533E] text-white font-semibold text-xs shadow-xs transition-colors duration-150 active:scale-[0.98]"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download Clinic PDF</span>

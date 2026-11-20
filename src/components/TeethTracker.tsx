@@ -238,14 +238,14 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
                   onClick={() => handleOpenToothModal(tooth)}
                   className={`group relative p-2.5 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center gap-1.5 ${
                     isErupted
-                      ? 'bg-gradient-to-b from-amber-50 to-white dark:from-[#2A2322] dark:to-[#1D1C22] border-[#E2765A] shadow-md scale-102 ring-2 ring-[#E2765A]/20'
+                      ? 'bg-[#EDF5EE] dark:bg-[#1F2B21] border-[#44634B] dark:border-[#ADCFB1] shadow-xs scale-102 ring-2 ring-[#44634B]/20'
                       : 'bg-[#FAF8F5] dark:bg-[#17161B] border-dashed border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D0C9BE] dark:hover:border-[#3D3A44] opacity-80 hover:opacity-100'
                   }`}
                 >
                   {/* Tooth SVG Icon */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
                     isErupted
-                      ? 'bg-[#E2765A] text-white shadow-xs'
+                      ? 'bg-[#44634B] text-white shadow-xs'
                       : 'bg-white dark:bg-[#201E26] text-[#75706B] dark:text-[#9E9892]'
                   }`}>
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
@@ -288,14 +288,14 @@ export const TeethTracker: React.FC<TeethTrackerProps> = ({
                   onClick={() => handleOpenToothModal(tooth)}
                   className={`group relative p-2.5 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center gap-1.5 ${
                     isErupted
-                      ? 'bg-gradient-to-t from-amber-50 to-white dark:from-[#2A2322] dark:to-[#1D1C22] border-[#E2765A] shadow-md scale-102 ring-2 ring-[#E2765A]/20'
+                      ? 'bg-[#EDF5EE] dark:bg-[#1F2B21] border-[#44634B] dark:border-[#ADCFB1] shadow-xs scale-102 ring-2 ring-[#44634B]/20'
                       : 'bg-[#FAF8F5] dark:bg-[#17161B] border-dashed border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D0C9BE] dark:hover:border-[#3D3A44] opacity-80 hover:opacity-100'
                   }`}
                 >
                   {/* Tooth SVG Icon */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
                     isErupted
-                      ? 'bg-[#E2765A] text-white shadow-xs'
+                      ? 'bg-[#44634B] text-white shadow-xs'
                       : 'bg-white dark:bg-[#201E26] text-[#75706B] dark:text-[#9E9892]'
                   }`}>
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current transform rotate-180">

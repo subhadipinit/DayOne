@@ -141,7 +141,7 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-purple-500/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-rose-500 text-white">
+            <span className="p-1.5 rounded-xl bg-[#D97757] text-white">
               <Heart className="w-4 h-4 fill-current" />
             </span>
             <h2 className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5]">
@@ -149,7 +149,7 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-[#75706B] dark:text-[#9E9892] max-w-xl">
-            "A baby is born, and so is a mother." Caring for yourself is the single greatest gift you can give your baby. Track hydration, recovery vitals, and Ayurvedic nourishing nutrition.
+            "A baby is born, and so is a mother." You are doing amazing! Track hydration, recovery vitals, and Ayurvedic nourishing nutrition.
           </p>
         </div>
 

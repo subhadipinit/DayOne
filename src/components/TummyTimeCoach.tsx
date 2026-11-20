@@ -370,7 +370,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      
+
       {/* Header Banner */}
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-[#E2765A]/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
         <div>
@@ -434,7 +434,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
 
       {/* Main Grid: Interactive Stopwatch on Left, Visual Sensory Deck on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* LEFT: Live Tummy Time Stopwatch Panel (5 Cols) */}
         <div className="lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-sm flex flex-col justify-between space-y-5">
           <div>
@@ -455,11 +455,10 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                   <button
                     key={p.label}
                     onClick={() => setTargetPresetSeconds(p.secs)}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all ${
-                      targetPresetSeconds === p.secs
-                        ? 'bg-[#E2765A] text-white shadow-xs'
-                        : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all ${targetPresetSeconds === p.secs
+                      ? 'bg-[#E2765A] text-white shadow-xs'
+                      : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
+                      }`}
                   >
                     {p.label}
                   </button>
@@ -491,11 +490,10 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
             <div className="flex items-center gap-2 mt-4">
               <button
                 onClick={handleStartPause}
-                className={`flex-1 py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] ${
-                  isRunning
-                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
-                    : 'bg-[#E2765A] hover:bg-[#D26549] shadow-[#E2765A]/25'
-                }`}
+                className={`flex-1 py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] ${isRunning
+                  ? 'bg-[#99462A] hover:bg-[#803921]'
+                  : 'bg-[#44634B] hover:bg-[#38533E]'
+                  }`}
               >
                 {isRunning ? (
                   <>
@@ -531,33 +529,30 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setSessionMood('happy')}
-                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${
-                      sessionMood === 'happy'
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                        : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
-                    }`}
+                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${sessionMood === 'happy'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                      : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
+                      }`}
                   >
                     <Smile className="w-3.5 h-3.5 text-emerald-500" />
                     <span>Happy</span>
                   </button>
                   <button
                     onClick={() => setSessionMood('calm')}
-                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${
-                      sessionMood === 'calm'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-                        : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
-                    }`}
+                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${sessionMood === 'calm'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                      : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
+                      }`}
                   >
                     <Meh className="w-3.5 h-3.5 text-blue-500" />
                     <span>Calm</span>
                   </button>
                   <button
                     onClick={() => setSessionMood('fussy')}
-                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${
-                      sessionMood === 'fussy'
-                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                        : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
-                    }`}
+                    className={`p-1.5 rounded-xl border flex items-center gap-1 text-xs font-semibold transition-all ${sessionMood === 'fussy'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                      : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B]'
+                      }`}
                   >
                     <Frown className="w-3.5 h-3.5 text-amber-500" />
                     <span>Fussy</span>
@@ -599,7 +594,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
 
         {/* RIGHT: High-Contrast Visual Sensory Deck (7 Cols) */}
         <div className="lg:col-span-7 p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-sm flex flex-col justify-between space-y-4">
-          
+
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
@@ -614,11 +609,10 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsAutoAdvancing(!isAutoAdvancing)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  isAutoAdvancing
-                    ? 'bg-[#E2765A] text-white border-[#E2765A] shadow-xs'
-                    : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${isAutoAdvancing
+                  ? 'bg-[#E2765A] text-white border-[#E2765A] shadow-xs'
+                  : 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
                 title="Auto advance cards every 6 seconds"
               >
                 {isAutoAdvancing ? 'Auto Slideshow (On)' : 'Slideshow (Off)'}
@@ -673,11 +667,10 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                   setCurrentCardIndex(idx);
                   setIsAutoAdvancing(false);
                 }}
-                className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all p-1 bg-black ${
-                  currentCardIndex === idx
-                    ? 'border-[#E2765A] scale-105 shadow-sm'
-                    : 'border-[#EAE6DF] dark:border-[#2D2B33] opacity-60 hover:opacity-100'
-                }`}
+                className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all p-1 bg-black ${currentCardIndex === idx
+                  ? 'border-[#E2765A] scale-105 shadow-sm'
+                  : 'border-[#EAE6DF] dark:border-[#2D2B33] opacity-60 hover:opacity-100'
+                  }`}
               >
                 {card.renderSvg()}
               </button>
@@ -730,13 +723,12 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
 
                   <div className="flex items-center gap-2">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
-                        s.mood === 'happy'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                          : s.mood === 'calm'
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${s.mood === 'happy'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : s.mood === 'calm'
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
                           : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                      }`}
+                        }`}
                     >
                       {s.mood === 'happy' && <Smile className="w-3 h-3" />}
                       {s.mood === 'calm' && <Meh className="w-3 h-3" />}

@@ -241,24 +241,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 onClick={() => onChangeTab(tab.id)}
                 className={`relative flex flex-col items-center justify-center h-full w-full py-1 transition-[color,transform] duration-150 active:scale-[0.92] select-none ${
                   tab.isActive
-                    ? 'text-[#E2765A] dark:text-[#F1997A]'
+                    ? 'text-[#44634B] dark:text-[#A8D1B0]'
                     : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-[#FAF8F5]'
                 }`}
               >
                 {/* Active Indicator Bar */}
                 {tab.isActive && (
-                  <span className="absolute top-0 w-8 h-1 rounded-full bg-[#E2765A]" />
+                  <span className="absolute top-0 w-8 h-1 rounded-full bg-[#44634B] dark:bg-[#A8D1B0]" />
                 )}
 
                 {/* Icon Container with Badge */}
                 <div className="relative">
-                  <Icon
-                    className={`w-5 h-5 transition-transform duration-150 ${
-                      tab.isActive ? 'scale-110 stroke-[2.2]' : 'stroke-[1.75]'
-                    }`}
-                  />
+                  <div className={`p-1 rounded-full transition-colors ${tab.isActive ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : ''}`}>
+                    <Icon
+                      className={`w-5 h-5 transition-transform duration-150 ${
+                        tab.isActive ? 'scale-105 stroke-[2.2]' : 'stroke-[1.75]'
+                      }`}
+                    />
+                  </div>
                   {tab.badge !== undefined && (
-                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FFF0E6] text-[#8A3510] border border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830]">
+                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830]">
                       {tab.badge}
                     </span>
                   )}
@@ -266,9 +268,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                 {/* Label */}
                 <span
-                  className={`text-[10px] tracking-tight mt-1 transition-colors duration-150 ${
+                  className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 ${
                     tab.isActive
-                      ? 'font-semibold text-[#E2765A] dark:text-[#F1997A]'
+                      ? 'font-bold text-[#44634B] dark:text-[#A8D1B0]'
                       : 'font-medium text-[#75706B] dark:text-[#9E9892]'
                   }`}
                 >
@@ -285,32 +287,34 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             aria-expanded={isSheetOpen}
             className={`relative flex flex-col items-center justify-center h-full w-full py-1 transition-[color,transform] duration-150 active:scale-[0.92] select-none ${
               fifthTab.isSelected || isSheetOpen
-                ? 'text-[#E2765A] dark:text-[#F1997A]'
+                ? 'text-[#44634B] dark:text-[#A8D1B0]'
                 : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-[#FAF8F5]'
             }`}
           >
             {/* Active Indicator Bar */}
             {(fifthTab.isSelected || isSheetOpen) && (
-              <span className="absolute top-0 w-8 h-1 rounded-full bg-[#E2765A]" />
+              <span className="absolute top-0 w-8 h-1 rounded-full bg-[#44634B] dark:bg-[#A8D1B0]" />
             )}
 
             <div className="relative">
-              <FifthIcon
-                className={`w-5 h-5 transition-transform duration-150 ${
-                  fifthTab.isSelected || isSheetOpen ? 'scale-110 stroke-[2.2]' : 'stroke-[1.75]'
-                }`}
-              />
+              <div className={`p-1 rounded-full transition-colors ${fifthTab.isSelected || isSheetOpen ? 'bg-[#E1EDE4] dark:bg-[#203D24]' : ''}`}>
+                <FifthIcon
+                  className={`w-5 h-5 transition-transform duration-150 ${
+                    fifthTab.isSelected || isSheetOpen ? 'scale-105 stroke-[2.2]' : 'stroke-[1.75]'
+                  }`}
+                />
+              </div>
               {!fifthTab.isSelected && (
-                <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FFF0E6] text-[#8A3510] border border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830]">
+                <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-semibold bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830]">
                   7
                 </span>
               )}
             </div>
 
             <span
-              className={`text-[10px] tracking-tight mt-1 transition-colors duration-150 flex items-center gap-0.5 ${
+              className={`text-[10px] tracking-tight mt-0.5 transition-colors duration-150 flex items-center gap-0.5 ${
                 fifthTab.isSelected || isSheetOpen
-                  ? 'font-semibold text-[#E2765A] dark:text-[#F1997A]'
+                  ? 'font-bold text-[#44634B] dark:text-[#A8D1B0]'
                   : 'font-medium text-[#75706B] dark:text-[#9E9892]'
               }`}
             >
@@ -346,11 +350,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <div className="px-5 py-3 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
-                  <LayoutGrid className="w-4 h-4 text-[#E2765A]" />
+                  <LayoutGrid className="w-4 h-4 text-[#44634B] dark:text-[#A8D1B0]" />
                   <span>All Pages & Features</span>
                 </h3>
                 <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] mt-0.5">
-                  11 Pediatric Trackers & Care Modules
+                  12 Pediatric Trackers & Care Modules
                 </p>
               </div>
 
@@ -385,7 +389,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                           }}
                           className={`w-full flex items-center justify-between p-3 rounded-2xl text-left border transition-all duration-150 active:scale-[0.98] ${
                             isCurrent
-                              ? 'bg-white dark:bg-[#201E26] border-[#E2765A] shadow-sm ring-1 ring-[#E2765A]/20'
+                              ? 'bg-white dark:bg-[#201E26] border-[#44634B] shadow-sm ring-1 ring-[#44634B]/20'
                               : 'bg-white/80 dark:bg-[#1D1C22]/80 hover:bg-white dark:hover:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33]'
                           }`}
                         >
@@ -393,7 +397,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                             <div
                               className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                                 isCurrent
-                                  ? 'bg-[#FFF0E6] dark:bg-[#2D2422] border-[#FCDCCB] dark:border-[#543830] text-[#E2765A]'
+                                  ? 'bg-[#E1EDE4] dark:bg-[#203D24] border-[#C5DCCE] dark:border-[#2E4733] text-[#44634B] dark:text-[#A8D1B0]'
                                   : 'bg-[#F2ECE3] dark:bg-[#26242C] border-[#EAE6DF] dark:border-[#35333C] text-[#75706B] dark:text-[#9E9892]'
                               }`}
                             >
@@ -403,12 +407,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className={`text-xs font-semibold truncate ${
-                                  isCurrent ? 'text-[#E2765A] dark:text-[#F1997A]' : 'text-[#201E1D] dark:text-[#FAF8F5]'
+                                  isCurrent ? 'text-[#44634B] dark:text-[#A8D1B0]' : 'text-[#201E1D] dark:text-[#FAF8F5]'
                                 }`}>
                                   {item.label}
                                 </span>
                                 {item.badge && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-medium bg-[#FFF0E6] text-[#8A3510] border border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830] shrink-0">
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-medium bg-[#FAECE5] text-[#D97757] border border-[#F4D5C6] dark:bg-[#3B251F] dark:text-[#F8BCA0] dark:border-[#543830] shrink-0">
                                     {item.badge}
                                   </span>
                                 )}
@@ -420,7 +424,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                           </div>
 
                           {isCurrent ? (
-                            <div className="w-5 h-5 rounded-full bg-[#E2765A] text-white flex items-center justify-center shrink-0 ml-2">
+                            <div className="w-5 h-5 rounded-full bg-[#44634B] text-white flex items-center justify-center shrink-0 ml-2">
                               <Check className="w-3 h-3 stroke-[2.5]" />
                             </div>
                           ) : (

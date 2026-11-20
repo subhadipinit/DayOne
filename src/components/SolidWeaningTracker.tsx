@@ -51,7 +51,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
   profile,
   userRole = 'parent',
 }) => {
-  const [activeTab, setActiveTab] = useState<WeaningTab>('chart');
+  const [activeTab, setActiveTab] = useState<WeaningTab>('diary');
 
   // Stage selector for Age-Wise Chart
   const [selectedStageId, setSelectedStageId] = useState<string>('6-7m');
@@ -273,52 +273,99 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
-      {/* HEADER BANNER */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-amber-500/5 to-teal-500/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+      {/* STITCH "NURTURING DAYLIGHT" 100 FOODS HERO BANNER */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-[#44634B] text-white shadow-xs">
               <Utensils className="w-4 h-4" />
             </span>
-            <h2 className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              First Foods & Solid Weaning Hub (6+ Months)
+            <h2 className="text-lg sm:text-xl font-bold text-on-surface dark:text-[#FAF8F5]">
+              100 Foods Challenge & Solid Weaning
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-[#75706B] dark:text-[#9E9892] max-w-xl">
-            Age-wise feeding stages, 16+ step-by-step pediatric recipes, and the <strong>100 Foods Before Age One</strong> challenge with safety & allergen guidance.
+          <p className="text-xs sm:text-sm text-on-surface-variant dark:text-[#9E9892] max-w-xl">
+            Baby-led weaning, allergen exposure matrix, and age-wise nutrition for <strong>{profile.name}</strong>.
           </p>
+
+          <div className="flex items-center gap-2 flex-wrap pt-2">
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${badge.color}`}>
+              {badge.label}
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-[#EDF5EE] dark:bg-[#1F2B21] text-[#23522A] dark:text-[#ADCFB1] text-[11px] font-bold border border-[#CFE2D1] dark:border-[#2D4231] flex items-center gap-1">
+              <Check className="w-3 h-3 text-[#44634B]" />
+              <span>{lovedCount} Loved</span>
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-[#FFDBD0] dark:bg-[#3D251C] text-[#99462A] dark:text-[#FFB59E] text-[11px] font-bold border border-[#FCDCCB] dark:border-[#543830] flex items-center gap-1">
+              <Heart className="w-3 h-3 text-[#D97757]" />
+              <span>6 Top Allergens Monitored</span>
+            </span>
+          </div>
         </div>
 
-        {/* 100 Foods Badge Counter */}
-        <div className="bg-white dark:bg-[#1D1C22] p-4 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex items-center gap-4 shrink-0">
-          <div className="text-center">
-            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              {introducedFoods.length} <span className="text-xs font-semibold text-[#75706B]">/ 100</span>
-            </div>
-            <div className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase font-bold tracking-wider">
-              Foods Introduced
-            </div>
-          </div>
-          <div className="w-28 space-y-1">
-            <div className="bg-[#EAE6DF] dark:bg-[#2D2B33] h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-emerald-500 h-full transition-all duration-500 rounded-full"
-                style={{ width: `${progressPercent}%` }}
+        {/* Circular Radial Progress Meter (Direct from Stitch Mockup) */}
+        <div className="bg-[#FAF8F5] dark:bg-[#17161B] p-4 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex items-center gap-4 shrink-0">
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+              <path
+                className="text-[#EAE6DF] dark:text-[#2D2B33]"
+                strokeWidth="3.5"
+                stroke="currentColor"
+                fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
-            </div>
-            <div className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 text-center truncate">
-              {progressPercent}% Complete
+              <path
+                className="text-[#44634B] dark:text-[#ADCFB1] transition-all duration-700 ease-out"
+                strokeDasharray={`${progressPercent}, 100`}
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                stroke="currentColor"
+                fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+            </svg>
+            <div className="absolute text-center">
+              <span className="text-sm font-black text-on-surface dark:text-[#FAF8F5] block font-mono leading-none">
+                {introducedFoods.length}
+              </span>
+              <span className="text-[9px] font-bold text-[#75706B] dark:text-[#9E9892]">
+                / 100
+              </span>
             </div>
           </div>
+
+          <div className="space-y-1">
+            <div className="text-xs font-bold text-on-surface dark:text-[#FAF8F5]">
+              {progressPercent}% Explored
+            </div>
+            <div className="text-[11px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
+              {100 - introducedFoods.length} foods remaining
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Safety Quick Tip Card (Direct from Stitch Mockup) */}
+      <div className="p-4 rounded-2xl bg-[#FDF6E2] dark:bg-[#2A2318] border border-[#F6E6B8] dark:border-[#4B3C23] flex items-start gap-3 shadow-xs">
+        <div className="w-8 h-8 rounded-full bg-[#FFDDAE] dark:bg-[#4B3C23] text-[#7C5400] dark:text-[#F8BC58] flex items-center justify-center shrink-0">
+          <ShieldAlert className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-xs font-bold text-[#6E4D05] dark:text-[#F8BC58]">
+            Pediatric Safety Note: Gagging vs Choking
+          </h4>
+          <p className="text-xs text-[#7C5400] dark:text-[#DDD8D0] mt-0.5 leading-relaxed">
+            Gagging is a normal, noisy, protective throat reflex as baby learns oral motor control. Choking is silent. Always serve soft, finger-length spears and supervise meals upright.
+          </p>
         </div>
       </div>
 
       {/* TOP NAVIGATION TABS */}
       <div className="flex items-center gap-2 border-b border-[#EAE6DF] dark:border-[#2D2B33] pb-2 overflow-x-auto no-scrollbar">
         {[
-          { id: 'chart' as WeaningTab, label: '🥣 Age-Wise Food Chart', desc: 'Stage 1 to 5 (6–12+ M)' },
-          { id: 'recipes' as WeaningTab, label: '📖 Pediatric Recipes', desc: '16+ Tested Recipes' },
-          { id: 'diary' as WeaningTab, label: '🥑 100 Foods Diary', desc: `${introducedFoods.length}/100 Explored` },
+          { id: 'diary' as WeaningTab, label: '🥑 100 Foods Grid', desc: `${introducedFoods.length}/100 Explored` },
+          { id: 'chart' as WeaningTab, label: '🥣 Age-Wise Stages', desc: 'Stage 1 to 5 (6–12+ M)' },
+          { id: 'recipes' as WeaningTab, label: '📖 Tested Recipes', desc: '16+ Step-by-Step' },
           { id: 'safety' as WeaningTab, label: '🛡️ Safety & Allergens', desc: 'Gagging vs Choking' },
         ].map((tab) => (
           <button
@@ -326,8 +373,8 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex flex-col items-start gap-0.5 ${
               activeTab === tab.id
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
+                ? 'bg-[#44634B] text-white shadow-xs'
+                : 'bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-on-surface-variant dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
             }`}
           >
             <span>{tab.label}</span>

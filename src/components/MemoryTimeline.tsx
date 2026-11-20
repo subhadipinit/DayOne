@@ -126,7 +126,7 @@ export const MemoryTimeline: React.FC<MemoryTimelineProps> = ({
           {userRole === 'parent' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#E2765A] hover:bg-[#CB6145] text-white shadow-xs transition-all active:scale-[0.98]"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#44634B] hover:bg-[#38533E] text-white shadow-xs transition-all active:scale-[0.98]"
             >
               <Plus className="w-4 h-4" />
               <span>Add Memory</span>
