@@ -41,15 +41,13 @@ body {
   min-height: 100%;
 }
 
-/* Snappy, native 160ms entrance instead of sluggish 500ms */
+/* Snappy, native 160ms entrance without creating persistent transform containing-blocks */
 @keyframes fadeInQuick {
   0% {
     opacity: 0;
-    transform: translateY(6px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

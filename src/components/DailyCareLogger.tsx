@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Baby,
   Clock,
@@ -231,6 +232,27 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
 
   // --- 5. BOTTOM SHEET MODAL STATE ---
   const [activeModal, setActiveModal] = useState<'bottle' | 'diaper' | 'sleep' | 'breast_manual' | null>(null);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Lock body scroll and handle Escape key when modal drawer is open
+  useEffect(() => {
+    if (activeModal) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setActiveModal(null);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [activeModal]);
 
   // Bottle Logger States
   const [bottleMl, setBottleMl] = useState<number>(120);
@@ -349,18 +371,19 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
 
   return (
     <div
-      className={`space-y-4 sm:space-y-5 animate-reveal transition-colors duration-200 ${
+      className={`space-y-4 sm:space-y-5 transition-colors duration-200 ${
         isNurseryMode ? 'nursery-night-mode bg-[#0B0C0E] text-[#D8D4CC] p-3 sm:p-4 rounded-3xl' : ''
       }`}
     >
       {/* Toast Notification Pop */}
-      {toastMessage && (
+      {isMounted && toastMessage && createPortal(
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 max-w-[92vw] animate-in fade-in slide-in-from-top-3">
           <div className="bg-[#1C1B22]/95 text-[#FAF8F5] backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2.5 text-xs font-bold border border-white/10">
             <CheckCircle2 className="w-4 h-4 text-[#A8D1B0]" />
             <span>{toastMessage}</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Header Bar with 3 AM Nursery Mode Toggle */}
@@ -998,9 +1021,14 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
           ========================================================================= */}
 
       {/* --- 1. BOTTLE LOGGER BOTTOM SHEET --- */}
-      {activeModal === 'bottle' && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+      {isMounted && activeModal === 'bottle' && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveModal(null);
+          }}
+        >
+          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom,0px),24px)] animate-in slide-in-from-bottom duration-200">
             {/* Grab handle */}
             <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto" />
 
@@ -1129,13 +1157,19 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               <span>Save Bottle Feed ({bottleMl} ml)</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- 2. DIAPER LOGGER BOTTOM SHEET --- */}
-      {activeModal === 'diaper' && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+      {isMounted && activeModal === 'diaper' && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveModal(null);
+          }}
+        >
+          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom,0px),24px)] animate-in slide-in-from-bottom duration-200">
             {/* Grab handle */}
             <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto" />
 
@@ -1288,13 +1322,19 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               <span>Save Diaper Change</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- 3. SLEEP LOGGER BOTTOM SHEET --- */}
-      {activeModal === 'sleep' && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+      {isMounted && activeModal === 'sleep' && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveModal(null);
+          }}
+        >
+          <div className="w-full max-w-lg bg-white dark:bg-[#1C1B22] rounded-t-[32px] sm:rounded-3xl border border-[#E8E4DC] dark:border-[#2C2A34] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom,0px),24px)] animate-in slide-in-from-bottom duration-200">
             {/* Grab handle */}
             <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto" />
 
@@ -1399,7 +1439,8 @@ export const DailyCareLogger: React.FC<DailyCareLoggerProps> = ({
               <span>Save Nap Session ({sleepPresetMinutes} mins)</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
