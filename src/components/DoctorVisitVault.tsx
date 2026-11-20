@@ -24,6 +24,13 @@ import {
   Phone,
   Mic,
   Edit3,
+  MapPin,
+  Clock,
+  User,
+  Activity,
+  CheckSquare,
+  Square,
+  Building,
 } from 'lucide-react';
 import {
   ChildProfile,
@@ -34,6 +41,7 @@ import {
 } from '@/lib/types';
 import { generateDoctorSummaryPdf } from '@/lib/pdfExport';
 import { ActiveTab } from './BottomNav';
+import confetti from 'canvas-confetti';
 
 interface DoctorVisitVaultProps {
   profile: ChildProfile;
@@ -45,9 +53,18 @@ interface DoctorVisitVaultProps {
   onToggleQuestion: (id: string, ans?: string) => void;
   onDeleteQuestion: (id: string) => void;
   onAddSymptom: (sym: Omit<SymptomLog, 'id'>) => void;
+  onDeleteSymptom?: (id: string) => void;
   userRole: 'parent' | 'family';
   onNavigateTab?: (tab: ActiveTab) => void;
 }
+
+const QUESTION_SUGGESTIONS = [
+  'Weaning solids & food allergy introduction',
+  'Night-waking & 6-month sleep regression',
+  'Teething gum pain & safe remedies',
+  'Weight percentile & WHO trajectory check',
+  'Motor milestones: sitting without support',
+];
 
 export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
   profile,
@@ -59,6 +76,7 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
   onToggleQuestion,
   onDeleteQuestion,
   onAddSymptom,
+  onDeleteSymptom,
   userRole,
   onNavigateTab,
 }) => {
@@ -66,6 +84,7 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
   const [showSymptomModal, setShowSymptomModal] = useState<boolean>(false);
   const [activeAnsweringId, setActiveAnsweringId] = useState<string | null>(null);
   const [liveAnswerText, setLiveAnswerText] = useState<string>('');
+  const [isRecordingAudio, setIsRecordingAudio] = useState<boolean>(false);
 
   // Symptom form state
   const [symptomText, setSymptomText] = useState<string>('');
@@ -76,6 +95,12 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
   // WhatsApp generator state
   const [showWhatsAppModal, setShowWhatsAppModal] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
   const latestGrowth = growthRecords[growthRecords.length - 1];
 
@@ -120,6 +145,7 @@ _Sent via DayOne Pediatric Vault_`;
     const msg = generateWhatsAppMessage();
     navigator.clipboard.writeText(msg);
     setIsCopied(true);
+    showToast('Clinical summary copied to clipboard! 📋');
     setTimeout(() => setIsCopied(false), 2500);
   };
 
@@ -137,11 +163,30 @@ _Sent via DayOne Pediatric Vault_`;
     if (!newQuestionText.trim()) return;
     onAddQuestion(newQuestionText.trim());
     setNewQuestionText('');
+    showToast('Question added to visit checklist! 📝');
+  };
+
+  const handleAddPresetQuestion = (text: string) => {
+    onAddQuestion(text);
+    showToast(`Added "${text}"!`);
+  };
+
+  const handleSimulateVoiceDictation = () => {
+    setIsRecordingAudio(true);
+    setTimeout(() => {
+      setIsRecordingAudio(false);
+      setLiveAnswerText(
+        (prev) =>
+          (prev ? `${prev} ` : '') +
+          'Dr. advised continuing Vitamin D3 drops every morning. Start mashed sweet potato and avocado for solid weaning. Schedule next visit at 9 months.'
+      );
+    }, 1500);
   };
 
   const handleSaveLiveAnswer = (id: string) => {
     if (liveAnswerText.trim()) {
       onToggleQuestion(id, liveAnswerText.trim());
+      showToast('Doctor’s advice recorded & saved! 🩺');
     } else {
       onToggleQuestion(id);
     }
@@ -164,265 +209,281 @@ _Sent via DayOne Pediatric Vault_`;
     setMedGiven('');
     setSymptomNotes('');
     setShowSymptomModal(false);
+    showToast('Symptom logged to clinical timeline! 🌡️');
   };
 
   const handleExportPdf = () => {
-    generateDoctorSummaryPdf({
-      profile,
-      growthRecords,
-      vaccines,
-      questions,
-      symptoms,
-    });
+    try {
+      generateDoctorSummaryPdf({
+        profile,
+        growthRecords,
+        vaccines,
+        questions,
+        symptoms,
+      });
+      showToast('Pediatrician clinic brief PDF generated! 📄');
+    } catch (err) {
+      console.error(err);
+      showToast('Error generating PDF');
+    }
   };
 
   const pendingQuestionsCount = questions.filter((q) => !q.isAnswered).length;
 
   return (
-    <div className="flex flex-col w-full pb-8 space-y-6">
-      {/* Quick Navigation to Dose Calculator */}
-      {onNavigateTab && (
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-primary">calculate</span>
-            <span className="text-on-surface font-medium">
-              Need weight-based medication doses or fever calculator?
-            </span>
+    <div className="space-y-4 sm:space-y-5 animate-reveal">
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 max-w-[90vw]">
+          <div className="bg-[#2D312E]/95 text-[#EFF2ED] dark:bg-[#FAF8F5] dark:text-[#191C1A] backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2.5 text-xs font-semibold border border-white/10 dark:border-black/10">
+            <CheckCircle2 className="w-4 h-4 text-[#C8EBCC] dark:text-[#44634B]" />
+            <span>{toastMessage}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('dose')}
-            className="px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-semibold text-[11px] shrink-0 active:scale-95 transition-all shadow-xs"
-          >
-            Open Calculator →
-          </button>
         </div>
       )}
 
-      {/* Screen Title & Action Bar */}
-      <div className="flex flex-col gap-2 pt-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm mb-1 font-semibold">
-              <span className="material-symbols-outlined text-[14px]">local_hospital</span>
-              Pediatric Portal
+      {/* Screen Title & Quick Switch */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#C8EBCC]/60 dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] text-[11px] font-bold">
+              <Stethoscope className="w-3.5 h-3.5 text-[#44634B] dark:text-[#ADCFB1]" />
+              <span>Pediatric Visit Portal</span>
             </span>
-            <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight font-bold">
-              Doctor Visit &amp; Rx Vault
-            </h1>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              Pediatric records &amp; visit prep questions for {profile.name}
-            </p>
+            <span className="text-[11px] font-semibold text-[#424842] dark:text-[#9E9892]">
+              Consultation Prep &amp; Dossier
+            </span>
           </div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
+            Doctor Visit &amp; Clinical Notes
+          </h2>
+          <p className="text-xs text-[#424842] dark:text-[#9E9892] mt-0.5">
+            15-minute consultation questions checklist &amp; direct pediatrician summary
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {onNavigateTab && (
+            <button
+              type="button"
+              onClick={() => onNavigateTab('dose')}
+              className="tap-feedback min-h-[44px] px-3.5 py-2 rounded-full bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#F1F4F0] dark:hover:bg-[#263129] cursor-pointer"
+            >
+              <Calculator className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1]" />
+              <span>Dose Assistant</span>
+            </button>
+          )}
+
           <button
-            onClick={() => setShowSymptomModal(true)}
-            className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md px-4 py-2.5 rounded-full shadow-xs hover:bg-primary-container active:scale-95 transition-all font-semibold"
             type="button"
+            onClick={() => setShowSymptomModal(true)}
+            className="tap-feedback min-h-[44px] px-4 py-2 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">note_add</span>
-            <span>+ Symptom</span>
+            <Plus className="w-4 h-4" />
+            <span>Log Symptom</span>
           </button>
         </div>
       </div>
 
-      {/* Hero Card: Upcoming Visit Reminder */}
-      <div className="rounded-3xl bg-surface-container-lowest shadow-sm p-5 border border-outline-variant/30 flex flex-col gap-4">
-        {/* Status Badge & Counter */}
+      {/* 1. Hero Card: Pediatrician Profile & Clinic Summary */}
+      <div className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 sm:p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold">
-            <span className="material-symbols-outlined text-[15px] text-secondary">event</span>
-            Upcoming Checkup • Routine Wellness
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFDBD0]/60 dark:bg-[#543830] text-[#762C12] dark:text-[#FFB59E] text-xs font-bold">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Routine Wellness Checkup Scheduled</span>
           </span>
-          <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            Active Patient File
+
+          <span className="text-xs font-bold text-[#44634B] dark:text-[#ADCFB1] flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#44634B] animate-pulse" />
+            <span>Active Patient Dossier</span>
           </span>
         </div>
 
-        {/* Main Headline */}
-        <div className="flex flex-col gap-1">
-          <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
-            Pediatric Consultation &amp; Wellness Checkup
-          </h2>
-          <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
-            Recommended every 2–3 months during baby&apos;s 1st year
-          </p>
-        </div>
-
-        {/* Clinic & Doctor Location Tile */}
-        <div className="rounded-2xl bg-surface-container-low p-4 flex flex-col gap-3 border border-outline-variant/20">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-on-primary-fixed-variant text-[20px]">person</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-label-lg text-label-lg text-on-surface font-bold truncate">
-                  Dr. {profile.pediatricianName || 'Clara Morrison, MD'}
-                </div>
-                <div className="font-body-sm text-body-sm text-on-surface-variant truncate text-xs">
-                  Lead Pediatrician • Westside Children&apos;s Clinic
-                </div>
+        {/* Doctor Identity Tile */}
+        <div className="rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] p-3.5 sm:p-4 border border-[#E0E3DF] dark:border-[#2D382F] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#C8EBCC] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] flex items-center justify-center shrink-0">
+              <User className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5] truncate">
+                Dr. {profile.pediatricianName || 'Clara Morrison, MD'}
+              </h3>
+              <p className="text-xs text-[#424842] dark:text-[#9E9892] truncate mt-0.5">
+                Lead Pediatrician • {profile.emergencyHospital || 'Westside Children’s Clinic'}
+              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#424842] dark:text-[#9E9892] mt-1">
+                <MapPin className="w-3.5 h-3.5 text-[#99462A] shrink-0" />
+                <span className="truncate">Suite 304, Pediatric Care Tower</span>
               </div>
             </div>
-            {profile.pediatricianPhone && (
-              <a
-                href={`tel:${profile.pediatricianPhone}`}
-                className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs active:scale-95 transition-all"
-                title="Call Doctor"
-              >
-                <span className="material-symbols-outlined text-[18px]">phone</span>
-              </a>
-            )}
           </div>
-          <div className="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm text-xs">
-            <span className="material-symbols-outlined text-[16px] text-tertiary">location_on</span>
-            <span className="truncate">Suite 304, Pediatric Care Tower • Westside Clinic</span>
-          </div>
+
+          {profile.pediatricianPhone && (
+            <a
+              href={`tel:${profile.pediatricianPhone}`}
+              className="tap-feedback w-11 h-11 rounded-full bg-[#44634B] text-white flex items-center justify-center shrink-0 shadow-xs hover:bg-[#344738]"
+              title="Call Pediatrician"
+            >
+              <Phone className="w-5 h-5" />
+            </a>
+          )}
         </div>
 
-        {/* PDF Summary & Sharing Action Card */}
-        <div className="rounded-2xl bg-surface-container p-4 flex flex-col gap-2 border border-outline-variant/20">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary text-[22px]">auto_stories</span>
-              <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                WHO Trajectory &amp; Growth Dossier
-              </span>
-            </div>
-            <span className="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-semibold">
-              Auto-synced
-            </span>
-          </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant text-xs leading-relaxed">
-            Pre-assembles WHO percentile curves, vaccine records, feeding volume, and active fever/symptom history for the consultation.
-          </p>
+        {/* Export Dossier & WhatsApp Triggers */}
+        <div className="flex items-center gap-2.5 flex-wrap pt-1">
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            className="tap-feedback flex-1 min-h-[44px] px-4 py-2 rounded-full bg-white dark:bg-[#202822] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold shadow-xs flex items-center justify-center gap-2 hover:bg-[#F1F4F0] cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1]" />
+            <span>Generate Visit PDF Brief</span>
+          </button>
 
-          <div className="pt-2 flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleExportPdf}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-secondary text-on-secondary font-label-md text-label-md shadow-xs hover:opacity-90 active:scale-95 transition-all font-semibold"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-              <span>Generate Visit Brief (PDF)</span>
-            </button>
-            <button
-              onClick={() => setShowWhatsAppModal(true)}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-xs hover:bg-primary-container active:scale-95 transition-all font-semibold"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">chat</span>
-              <span>WhatsApp Doctor</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowWhatsAppModal(true)}
+            className="tap-feedback flex-1 min-h-[44px] px-4 py-2 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>WhatsApp Dossier</span>
+          </button>
         </div>
       </div>
 
-      {/* Pediatric Consultation Guide / Questions Checklist */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      {/* 2. Questions Checklist for Consultation */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
-                Questions for Dr. {profile.pediatricianName ? profile.pediatricianName.split(' ')[0] : 'Morrison'}
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                {pendingQuestionsCount} pending
+              <h3 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                Consultation Questions
+              </h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFDBD0] dark:bg-[#543830] text-[#762C12] dark:text-[#FFB59E]">
+                {pendingQuestionsCount} Pending
               </span>
             </div>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              Check off in the room so quick 15-minute consultations miss nothing.
+            <p className="text-xs text-[#424842] dark:text-[#9E9892] mt-0.5">
+              Check off in the examination room so quick visits miss nothing
             </p>
           </div>
         </div>
 
-        {/* Add Question Input */}
+        {/* Add Question Input Form (≥44px touch targets) */}
         <form onSubmit={handleAddQuestionSubmit} className="flex gap-2">
           <input
             type="text"
             placeholder="Type question for pediatrician (e.g. night-waking, weaning rash)..."
             value={newQuestionText}
             onChange={(e) => setNewQuestionText(e.target.value)}
-            className="flex-1 h-11 px-4 rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs border border-outline-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-outline"
+            className="flex-1 min-h-[44px] px-4 rounded-xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] text-xs font-medium placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#44634B]/30"
           />
           <button
             type="submit"
-            className="px-4 h-11 rounded-full bg-primary text-on-primary font-label-md font-semibold shrink-0 shadow-xs active:scale-95 transition-all flex items-center gap-1"
+            className="tap-feedback min-h-[44px] px-4 rounded-xl bg-[#44634B] hover:bg-[#344738] text-white text-xs font-bold shrink-0 shadow-xs flex items-center justify-center gap-1 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
+            <Plus className="w-4 h-4" />
             <span>Add</span>
           </button>
         </form>
 
-        {/* Questions List */}
-        <div className="space-y-2.5">
+        {/* Question Quick Presets Chips */}
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          {QUESTION_SUGGESTIONS.map((sug) => (
+            <button
+              key={sug}
+              type="button"
+              onClick={() => handleAddPresetQuestion(sug)}
+              className="tap-feedback shrink-0 px-3 py-1.5 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#424842] dark:text-[#9E9892] hover:bg-[#E6E9E4] text-[11px] font-medium border border-[#E0E3DF] dark:border-[#2D382F] flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3 h-3 text-[#44634B]" />
+              <span>{sug}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Questions Cards List */}
+        <div className="space-y-2">
           {questions.length === 0 ? (
-            <div className="p-6 rounded-2xl bg-surface-container-lowest text-center text-on-surface-variant font-body-sm border border-outline-variant/30">
-              No questions added yet. Type your questions above to prep for the clinic visit!
+            <div className="p-8 rounded-2xl bg-white dark:bg-[#1E2520] text-center border border-[#E8E4DC] dark:border-[#2D382F]">
+              <HelpCircle className="w-8 h-8 text-[#44634B] mx-auto mb-2 opacity-50" />
+              <p className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                No questions recorded yet
+              </p>
+              <p className="text-[11px] text-[#424842] dark:text-[#9E9892] mt-1">
+                Type questions above or pick suggestions to prep for your visit!
+              </p>
             </div>
           ) : (
             questions.map((q) => {
               const isAnswering = activeAnsweringId === q.id;
+
               return (
                 <div
                   key={q.id}
-                  className={`rounded-2xl bg-surface-container-lowest p-4 shadow-xs border border-outline-variant/30 flex flex-col gap-2 transition-all ${
-                    q.isAnswered ? 'opacity-70 bg-surface-container-low' : ''
+                  className={`rounded-2xl p-4 border transition-all ${
+                    q.isAnswered
+                      ? 'bg-[#F7FAF5] dark:bg-[#161C17] border-[#E0E3DF] dark:border-[#2D382F] opacity-75'
+                      : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F] shadow-xs'
                   }`}
                 >
                   <div className="flex items-start gap-3">
+                    {/* Toggle Checkbox Button (≥44px Touch Zone) */}
                     <button
-                      onClick={() => onToggleQuestion(q.id)}
-                      className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                        q.isAnswered
-                          ? 'bg-primary text-on-primary'
-                          : 'bg-surface-container text-primary hover:bg-primary-fixed border border-outline-variant/40'
-                      }`}
                       type="button"
-                      aria-label="Toggle question status"
+                      onClick={() => onToggleQuestion(q.id)}
+                      className="tap-feedback w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 cursor-pointer"
+                      title={q.isAnswered ? 'Mark unanswered' : 'Mark answered'}
                     >
-                      <span className="material-symbols-outlined text-[16px]">check</span>
+                      {q.isAnswered ? (
+                        <CheckCircle2 className="w-6 h-6 text-[#44634B] dark:text-[#ADCFB1]" />
+                      ) : (
+                        <Circle className="w-6 h-6 text-stone-300 dark:text-stone-600 hover:text-[#44634B]" />
+                      )}
                     </button>
 
-                    <div className="flex-1 min-w-0 flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
                         <span
-                          className={`font-label-sm text-label-sm px-2.5 py-0.5 rounded-full font-semibold ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             q.isAnswered
-                              ? 'bg-surface-container text-on-surface-variant'
-                              : 'bg-secondary-fixed text-on-secondary-fixed'
+                              ? 'bg-[#C8EBCC]/50 dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1]'
+                              : 'bg-[#FFDBD0] dark:bg-[#543830] text-[#762C12] dark:text-[#FFB59E]'
                           }`}
                         >
-                          {q.isAnswered ? 'Answered' : 'Pending • Priority'}
+                          {q.isAnswered ? 'Addressed with Doctor' : 'Pending in Room'}
                         </span>
+
                         <button
-                          onClick={() => onDeleteQuestion(q.id)}
-                          className="text-outline hover:text-error text-xs"
                           type="button"
-                          aria-label="Delete question"
+                          onClick={() => onDeleteQuestion(q.id)}
+                          className="tap-feedback p-1 text-stone-300 hover:text-rose-500 transition-colors"
+                          title="Delete question"
                         >
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       <p
-                        className={`font-label-lg text-label-lg text-on-surface leading-snug ${
-                          q.isAnswered ? 'line-through text-outline' : 'font-medium'
+                        className={`text-xs sm:text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5] leading-snug ${
+                          q.isAnswered ? 'line-through opacity-70' : ''
                         }`}
                       >
                         {q.question}
                       </p>
 
-                      {/* Doctor's answer note */}
+                      {/* Recorded Doctor Advice Note */}
                       {q.answer && (
-                        <div className="mt-1 p-2.5 rounded-xl bg-primary-fixed/30 border border-primary-fixed/40 text-on-primary-fixed-variant font-body-sm text-xs leading-relaxed">
-                          <strong>Doctor&apos;s Advice:</strong> {q.answer}
+                        <div className="p-3 rounded-xl bg-[#C8EBCC]/30 dark:bg-[#203D24]/40 border border-[#44634B]/20 text-xs text-[#191C1A] dark:text-[#FAF8F5] leading-relaxed">
+                          <strong className="text-[#44634B] dark:text-[#ADCFB1] block mb-0.5">
+                            Doctor&apos;s Advice / Next Steps:
+                          </strong>
+                          {q.answer}
                         </div>
                       )}
 
-                      {/* Live recording / note area */}
+                      {/* Interactive In-Room Live Note Recording Trigger */}
                       {!q.isAnswered && !isAnswering && (
                         <button
                           type="button"
@@ -430,40 +491,59 @@ _Sent via DayOne Pediatric Vault_`;
                             setActiveAnsweringId(q.id);
                             setLiveAnswerText(q.answer || '');
                           }}
-                          className="mt-1 rounded-xl bg-surface-container-low p-2.5 flex items-center justify-between gap-2 text-left hover:bg-surface-container transition-colors"
+                          className="tap-feedback min-h-[38px] w-full p-2.5 rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] flex items-center justify-between gap-2 text-xs text-[#424842] dark:text-[#9E9892] hover:bg-[#E6E9E4] cursor-pointer"
                         >
-                          <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5 truncate text-xs">
-                            <span className="material-symbols-outlined text-[16px] text-tertiary">edit_note</span>
-                            Tap to record doctor&apos;s answer live...
+                          <span className="flex items-center gap-1.5 font-medium truncate">
+                            <Edit3 className="w-3.5 h-3.5 text-[#44634B] dark:text-[#ADCFB1]" />
+                            <span>Record doctor&apos;s answer live in room...</span>
                           </span>
-                          <span className="material-symbols-outlined text-primary text-[18px]">mic</span>
+                          <span className="text-[11px] font-bold text-[#44634B] dark:text-[#ADCFB1]">
+                            Record Notes
+                          </span>
                         </button>
                       )}
 
+                      {/* Expanded In-Room Answer Recording Box */}
                       {isAnswering && (
-                        <div className="mt-2 space-y-2">
+                        <div className="pt-2 space-y-2 animate-in fade-in duration-150">
                           <textarea
+                            rows={3}
                             value={liveAnswerText}
                             onChange={(e) => setLiveAnswerText(e.target.value)}
-                            placeholder="Type doctor's advice or notes here..."
-                            rows={2}
-                            className="w-full p-2.5 rounded-xl bg-surface-container text-on-surface font-body-sm text-xs border border-primary/40 focus:outline-none"
+                            placeholder="Type advice given by pediatrician in the room..."
+                            className="w-full p-3 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#44634B] text-xs font-medium focus:outline-none"
                           />
-                          <div className="flex justify-end gap-2">
+
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
                             <button
                               type="button"
-                              onClick={() => setActiveAnsweringId(null)}
-                              className="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface"
+                              onClick={handleSimulateVoiceDictation}
+                              className={`tap-feedback px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border ${
+                                isRecordingAudio
+                                  ? 'bg-rose-500 text-white animate-pulse'
+                                  : 'bg-white dark:bg-[#202822] text-[#44634B] dark:text-[#ADCFB1] border-[#44634B]/30'
+                              }`}
                             >
-                              Cancel
+                              <Mic className="w-3.5 h-3.5" />
+                              <span>{isRecordingAudio ? 'Listening...' : 'Voice Dictate'}</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveLiveAnswer(q.id)}
-                              className="px-3 py-1 rounded-full text-xs bg-primary text-white font-semibold"
-                            >
-                              Save &amp; Mark Done
-                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setActiveAnsweringId(null)}
+                                className="px-3 py-1.5 rounded-full text-xs font-bold text-stone-500 hover:text-stone-700"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveLiveAnswer(q.id)}
+                                className="tap-feedback px-4 py-1.5 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-bold shadow-xs"
+                              >
+                                Save &amp; Mark Done
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -476,199 +556,228 @@ _Sent via DayOne Pediatric Vault_`;
         </div>
       </div>
 
-      {/* Symptoms & Clinical Observations Log */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      {/* 3. Recent Symptoms & Temperature Observations */}
+      <div className="space-y-2.5 pt-1">
+        <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[20px]">healing</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+            <Thermometer className="w-4 h-4 text-[#99462A]" />
+            <h3 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
               Recent Symptoms &amp; Vitals History
             </h3>
           </div>
-          <span className="font-label-sm text-label-sm text-outline">
-            {symptoms.length} records
+          <span className="text-xs text-[#424842] dark:text-[#9E9892]">
+            {symptoms.length} logs
           </span>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {symptoms.length === 0 ? (
-            <div className="p-5 rounded-2xl bg-surface-container-lowest text-center text-on-surface-variant font-body-sm border border-outline-variant/30 text-xs">
-              No active symptoms recorded. Tap &quot;+ Symptom&quot; at the top to log fevers, rashes, or coughs.
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1E2520] text-center text-xs text-[#424842] dark:text-[#9E9892] border border-[#E8E4DC] dark:border-[#2D382F]">
+              No active symptoms logged. Tap &quot;Log Symptom&quot; at the top to record fevers, rashes, or runny noses.
             </div>
           ) : (
             symptoms.map((s) => (
               <div
                 key={s.id}
-                className="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-xs flex items-center justify-between gap-3"
+                className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs flex items-center justify-between gap-3"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary font-bold text-sm shrink-0">
-                    🌡️
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#FFDBD0]/60 dark:bg-[#3E1C12]/60 text-[#762C12] dark:text-[#FFB59E] flex items-center justify-center shrink-0">
+                    <Activity className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="font-label-md text-label-md text-on-surface font-bold flex items-center gap-2">
-                      <span>{s.symptom}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                        {s.symptom}
+                      </span>
                       {s.temperatureC && (
-                        <span className="text-[11px] px-2 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFDBD0] text-[#762C12]">
                           {s.temperatureC}°C ({((s.temperatureC * 9) / 5 + 32).toFixed(1)}°F)
                         </span>
                       )}
                     </div>
-                    <div className="font-label-sm text-label-sm text-outline flex items-center gap-2 mt-0.5 text-xs">
-                      <span>{s.date}</span>
-                      {s.medicationGiven && (
-                        <>
-                          <span>•</span>
-                          <span>Med: {s.medicationGiven}</span>
-                        </>
-                      )}
-                      {s.notes && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate max-w-[150px]">{s.notes}</span>
-                        </>
-                      )}
-                    </div>
+                    <span className="text-[11px] text-[#424842] dark:text-[#9E9892] block mt-0.5 truncate">
+                      {new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {s.medicationGiven ? ` • Med: ${s.medicationGiven}` : ''}
+                      {s.notes ? ` • ${s.notes}` : ''}
+                    </span>
                   </div>
                 </div>
+
+                {onDeleteSymptom && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSymptom(s.id)}
+                    className="tap-feedback p-2 text-stone-300 hover:text-rose-500 transition-colors"
+                    title="Delete symptom"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* WhatsApp Modal */}
-      {showWhatsAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-3xl p-6 shadow-2xl border border-outline-variant/40 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">chat</span>
-                <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
-                  WhatsApp Health Dossier
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowWhatsAppModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container"
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs font-mono whitespace-pre-wrap max-h-60 overflow-y-auto text-on-surface">
-              {generateWhatsAppMessage()}
-            </div>
-
-            <div className="flex gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={handleCopyWhatsApp}
-                className="flex-1 h-12 rounded-full bg-surface-container text-on-surface font-label-md font-semibold flex items-center justify-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {isCopied ? 'check' : 'content_copy'}
-                </span>
-                <span>{isCopied ? 'Copied to Clipboard!' : 'Copy Text'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenWhatsApp}
-                className="flex-1 h-12 rounded-full bg-[#25D366] text-white font-label-md font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">send</span>
-                <span>Open in WhatsApp</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Symptom Modal */}
+      {/* 4. Add Symptom Modal */}
       {showSymptomModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-3xl p-6 shadow-2xl border border-outline-variant/40 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#1E2520] rounded-t-[28px] sm:rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150">
+            <div className="w-10 h-1 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto mb-1 sm:hidden" />
+
+            <div className="flex items-center justify-between border-b border-[#E8E4DC] dark:border-[#2D382F] pb-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[22px]">healing</span>
-                <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
-                  Log Symptom / Observation
-                </h3>
+                <div className="w-9 h-9 rounded-full bg-[#FFDBD0] dark:bg-[#543830] text-[#762C12] dark:text-[#FFB59E] flex items-center justify-center">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
+                    Log Symptom or Observation
+                  </h3>
+                  <p className="text-[11px] text-[#424842] dark:text-[#9E9892]">
+                    Recorded for {profile.name}&apos;s clinical chart
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setShowSymptomModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container"
                 type="button"
+                onClick={() => setShowSymptomModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSymptomSubmit} className="space-y-4">
+            <form onSubmit={handleSymptomSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-label-sm text-label-sm text-outline block mb-1">Symptom Description</label>
+                <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                  Symptom / Description
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Mild fever, dry cough, diaper rash..."
+                  required
+                  placeholder="e.g. Mild viral fever &amp; clear runny nose"
                   value={symptomText}
                   onChange={(e) => setSymptomText(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
-                  required
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-xs font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-label-sm text-label-sm text-outline block mb-1">Temperature (°C)</label>
+                  <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                    Body Temperature (°C)
+                  </label>
                   <input
                     type="number"
                     step="0.1"
-                    placeholder="37.8"
+                    placeholder="38.0"
                     value={tempC}
                     onChange={(e) => setTempC(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none text-center"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] font-bold text-sm text-center"
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-label-sm text-outline block mb-1">Medication Given</label>
+                  <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                    Medication Given
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. Calpol 5.3 mL"
+                    placeholder="e.g. Calpol 120 (1.2 ml)"
                     value={medGiven}
                     onChange={(e) => setMedGiven(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-xs font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-label-sm text-label-sm text-outline block mb-1">Doctor Notes / Context</label>
-                <textarea
-                  rows={2}
-                  placeholder="Appeared after morning walk; baby active and nursing normally..."
+                <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                  Additional Clinical Notes
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Started after 4 PM nap, sleeping comfortably"
                   value={symptomNotes}
                   onChange={(e) => setSymptomNotes(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-xs font-medium"
                 />
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowSymptomModal(false)}
-                  className="flex-1 h-12 rounded-full bg-surface-container text-on-surface font-label-lg font-semibold"
+                  className="tap-feedback flex-1 min-h-[48px] rounded-full border border-stone-200 dark:border-stone-700 font-bold text-stone-600 dark:text-stone-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold shadow-md hover:bg-primary-container"
+                  className="tap-feedback flex-1 min-h-[48px] rounded-full bg-[#44634B] hover:bg-[#344738] text-white font-bold shadow-xs flex items-center justify-center gap-1.5"
                 >
-                  Save Symptom
+                  <Check className="w-4 h-4" />
+                  <span>Save Symptom</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. WhatsApp Dossier Modal */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#1E2520] rounded-t-[28px] sm:rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150">
+            <div className="w-10 h-1 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto mb-1 sm:hidden" />
+
+            <div className="flex items-center justify-between border-b border-[#E8E4DC] dark:border-[#2D382F] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
+                    Pediatrician Consultation Dossier
+                  </h3>
+                  <p className="text-[11px] text-[#424842] dark:text-[#9E9892]">
+                    Pre-assembled WhatsApp message
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWhatsAppModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] text-xs font-mono whitespace-pre-wrap max-h-56 overflow-y-auto leading-relaxed text-[#191C1A] dark:text-[#FAF8F5]">
+              {generateWhatsAppMessage()}
+            </div>
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleCopyWhatsApp}
+                className="tap-feedback flex-1 min-h-[48px] rounded-full border border-stone-200 dark:border-stone-700 font-bold text-xs flex items-center justify-center gap-1.5"
+              >
+                <Copy className="w-4 h-4" />
+                <span>{isCopied ? 'Copied!' : 'Copy Text'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenWhatsApp}
+                className="tap-feedback flex-1 min-h-[48px] rounded-full bg-[#44634B] hover:bg-[#344738] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <Send className="w-4 h-4" />
+                <span>Open WhatsApp</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

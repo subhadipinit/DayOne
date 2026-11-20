@@ -16,31 +16,89 @@ import {
   Award,
   Smile,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useBabyStore } from '@/lib/store';
 import { Navbar } from '@/components/Navbar';
 import { HeroAgeTicker } from '@/components/HeroAgeTicker';
-import { VaccineTracker } from '@/components/VaccineTracker';
-import { GrowthCharts } from '@/components/GrowthCharts';
-import { DailyCareLogger } from '@/components/DailyCareLogger';
-import { DoctorVisitVault } from '@/components/DoctorVisitVault';
-import { PrescriptionVault } from '@/components/PrescriptionVault';
-import { MemoryTimeline } from '@/components/MemoryTimeline';
-import { CelebrationModal } from '@/components/CelebrationModal';
-import { MilestoneShareCard } from '@/components/MilestoneShareCard';
-import { ProfileSettingsModal } from '@/components/ProfileSettingsModal';
-import { WhiteNoisePlayer } from '@/components/WhiteNoisePlayer';
-import { TummyTimeCoach } from '@/components/TummyTimeCoach';
-import { MomCareTracker } from '@/components/MomCareTracker';
-import { TeethTracker } from '@/components/TeethTracker';
-import { SolidWeaningTracker } from '@/components/SolidWeaningTracker';
-import { DevelopmentalMilestones } from '@/components/DevelopmentalMilestones';
-import { MedicineDoseCalculator } from '@/components/MedicineDoseCalculator';
 import { LoginPage } from '@/components/LoginPage';
 import { DayOneLogo } from '@/components/DayOneLogo';
 import { BottomNav, ActiveTab } from '@/components/BottomNav';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { pushAllToSupabase } from '@/lib/syncService';
 import { getSupabaseClient } from '@/lib/supabaseClient';
+
+const TabLoadingSkeleton = () => (
+  <div className="flex flex-col items-center justify-center p-12 text-[#75706B] dark:text-[#9E9892] rounded-3xl bg-white/60 dark:bg-[#1C1B22]/60 border border-[#EAE6DF] dark:border-[#2C2A34] animate-pulse my-4">
+    <Loader2 className="w-6 h-6 animate-spin mb-2 text-primary" />
+    <span className="text-xs font-medium">Loading section...</span>
+  </div>
+);
+
+const VaccineTracker = dynamic(
+  () => import('@/components/VaccineTracker').then((m) => m.VaccineTracker),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const GrowthCharts = dynamic(
+  () => import('@/components/GrowthCharts').then((m) => m.GrowthCharts),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const DailyCareLogger = dynamic(
+  () => import('@/components/DailyCareLogger').then((m) => m.DailyCareLogger),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const DoctorVisitVault = dynamic(
+  () => import('@/components/DoctorVisitVault').then((m) => m.DoctorVisitVault),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const PrescriptionVault = dynamic(
+  () => import('@/components/PrescriptionVault').then((m) => m.PrescriptionVault),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const MemoryTimeline = dynamic(
+  () => import('@/components/MemoryTimeline').then((m) => m.MemoryTimeline),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const CelebrationModal = dynamic(
+  () => import('@/components/CelebrationModal').then((m) => m.CelebrationModal),
+  { ssr: false }
+);
+const MilestoneShareCard = dynamic(
+  () => import('@/components/MilestoneShareCard').then((m) => m.MilestoneShareCard),
+  { ssr: false }
+);
+const ProfileSettingsModal = dynamic(
+  () => import('@/components/ProfileSettingsModal').then((m) => m.ProfileSettingsModal),
+  { ssr: false }
+);
+const WhiteNoisePlayer = dynamic(
+  () => import('@/components/WhiteNoisePlayer').then((m) => m.WhiteNoisePlayer),
+  { ssr: false }
+);
+const TummyTimeCoach = dynamic(
+  () => import('@/components/TummyTimeCoach').then((m) => m.TummyTimeCoach),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const MomCareTracker = dynamic(
+  () => import('@/components/MomCareTracker').then((m) => m.MomCareTracker),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const TeethTracker = dynamic(
+  () => import('@/components/TeethTracker').then((m) => m.TeethTracker),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const SolidWeaningTracker = dynamic(
+  () => import('@/components/SolidWeaningTracker').then((m) => m.SolidWeaningTracker),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const DevelopmentalMilestones = dynamic(
+  () => import('@/components/DevelopmentalMilestones').then((m) => m.DevelopmentalMilestones),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
+const MedicineDoseCalculator = dynamic(
+  () => import('@/components/MedicineDoseCalculator').then((m) => m.MedicineDoseCalculator),
+  { loading: () => <TabLoadingSkeleton />, ssr: false }
+);
 
 export default function Home() {
   const store = useBabyStore();
@@ -78,37 +136,56 @@ export default function Home() {
       return;
     }
 
-    // Check active session
-    client.auth.getSession().then(({ data }) => {
-      if (data?.session?.user) {
-        setCurrentUser(data.session.user);
-        setIsOfflineMode(false);
-        store.hydrateFromCloud();
-      }
-      setIsAuthChecked(true);
-    });
+    let hasHydrated = false;
+
+    // Check active session safely with catch/finally
+    client.auth
+      .getSession()
+      .then(({ data }) => {
+        if (data?.session?.user) {
+          setCurrentUser(data.session.user);
+          setIsOfflineMode(false);
+          if (!hasHydrated) {
+            hasHydrated = true;
+            store.hydrateFromCloud();
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('[Supabase Auth] Session fetch error:', err);
+      })
+      .finally(() => {
+        setIsAuthChecked(true);
+      });
 
     // Listen to auth changes
-    const { data: authListener } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setCurrentUser(session.user);
         setIsOfflineMode(false);
         localStorage.removeItem('dayone_offline_mode');
-        store.hydrateFromCloud();
+        if (event === 'SIGNED_IN' || (!hasHydrated && event === 'INITIAL_SESSION')) {
+          hasHydrated = true;
+          store.hydrateFromCloud();
+        }
       } else {
         setCurrentUser(null);
       }
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      try {
+        authListener?.subscription?.unsubscribe();
+      } catch (err) {
+        // cleanup ignore
+      }
     };
   }, []);
 
   const handleSignOut = async () => {
     const client = getSupabaseClient();
     if (client) {
-      await client.auth.signOut();
+      await client.auth.signOut().catch(() => {});
     }
     setCurrentUser(null);
     setIsOfflineMode(false);
@@ -144,7 +221,10 @@ export default function Home() {
     );
   }
 
-  const latestGrowth = store.growthRecords[store.growthRecords.length - 1];
+  const latestGrowth =
+    store.growthRecords && store.growthRecords.length > 0
+      ? store.growthRecords[store.growthRecords.length - 1]
+      : undefined;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF8F5] dark:bg-[#141317] text-[#201E1D] dark:text-[#FAF8F5] transition-colors duration-150">
@@ -172,7 +252,7 @@ export default function Home() {
       />
 
       {/* Primary Feature Tabs Switcher (Visible on Desktop & Tablet; Mobile uses Native Thumb BottomNav) */}
-      <div className="hidden md:block sticky top-14 sm:top-16 z-30 py-2 backdrop-blur-xl bg-[#FAF8F5]/92 dark:bg-[#141317]/92 border-b border-[#EAE6DF]/80 dark:border-[#2D2B33]/80 transition-colors shadow-2xs select-none">
+      <div className="hidden md:block sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-[calc(4rem+env(safe-area-inset-top,0px))] z-30 py-2 backdrop-blur-xl bg-[#FAF8F5]/92 dark:bg-[#141317]/92 border-b border-[#EAE6DF]/80 dark:border-[#2D2B33]/80 transition-colors shadow-2xs select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={tabScrollRef}
@@ -332,7 +412,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-3.5 sm:space-y-5 pb-24 md:pb-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-3.5 sm:space-y-5 pb-8 md:pb-6">
 
         {/* Hero Banner with Precision Age Counter & Celebration Alert */}
         <HeroAgeTicker
@@ -344,134 +424,170 @@ export default function Home() {
 
         {/* Tab 1: Vaccines */}
         {activeTab === 'vaccines' && (
-          <VaccineTracker
-            vaccines={store.vaccines}
-            onUpdateVaccine={store.updateVaccine}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Vaccine Tracker">
+            <VaccineTracker
+              key={store.profile.id}
+              vaccines={store.vaccines}
+              onUpdateVaccine={store.updateVaccine}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab 2: Growth Charts */}
         {activeTab === 'growth' && (
-          <GrowthCharts
-            growthRecords={store.growthRecords}
-            profile={store.profile}
-            onAddGrowthRecord={store.addGrowthRecord}
-            onDeleteGrowthRecord={store.deleteGrowthRecord}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load WHO Growth Charts">
+            <GrowthCharts
+              key={store.profile.id}
+              growthRecords={store.growthRecords}
+              profile={store.profile}
+              onAddGrowthRecord={store.addGrowthRecord}
+              onDeleteGrowthRecord={store.deleteGrowthRecord}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab 3: Daily Care & Feeds */}
         {activeTab === 'daily' && (
-          <DailyCareLogger
-            childId={store.profile.id}
-            feedingLogs={store.feedingLogs}
-            diaperLogs={store.diaperLogs}
-            sleepLogs={store.sleepLogs}
-            onAddFeedingLog={store.addFeedingLog}
-            onDeleteFeedingLog={store.deleteFeedingLog}
-            onAddDiaperLog={store.addDiaperLog}
-            onDeleteDiaperLog={store.deleteDiaperLog}
-            onAddSleepLog={store.addSleepLog}
-            userRole={store.userRole}
-            onOpenShusher={() => setIsShusherOpen(true)}
-            onNavigateTab={setActiveTab}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Daily Care Logger">
+            <DailyCareLogger
+              key={store.profile.id}
+              childId={store.profile.id}
+              feedingLogs={store.feedingLogs}
+              diaperLogs={store.diaperLogs}
+              sleepLogs={store.sleepLogs}
+              onAddFeedingLog={store.addFeedingLog}
+              onDeleteFeedingLog={store.deleteFeedingLog}
+              onAddDiaperLog={store.addDiaperLog}
+              onDeleteDiaperLog={store.deleteDiaperLog}
+              onAddSleepLog={store.addSleepLog}
+              onDeleteSleepLog={store.deleteSleepLog}
+              userRole={store.userRole}
+              onOpenShusher={() => setIsShusherOpen(true)}
+              onNavigateTab={setActiveTab}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: Tummy Time Coach & Sensory Play */}
         {activeTab === 'tummy' && (
-          <TummyTimeCoach
-            profile={store.profile}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Tummy Time Coach">
+            <TummyTimeCoach
+              key={store.profile.id}
+              profile={store.profile}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: First Foods & Solid Weaning Diary */}
         {activeTab === 'weaning' && (
-          <SolidWeaningTracker
-            profile={store.profile}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Solid Weaning Tracker">
+            <SolidWeaningTracker
+              key={store.profile.id}
+              profile={store.profile}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: CDC & IAP Developmental Milestones */}
         {activeTab === 'milestones' && (
-          <DevelopmentalMilestones
-            profile={store.profile}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Developmental Milestones">
+            <DevelopmentalMilestones
+              key={store.profile.id}
+              profile={store.profile}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: 20-Baby-Teeth Eruption Map */}
         {activeTab === 'teeth' && (
-          <TeethTracker
-            profile={store.profile}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Baby Teeth Tracker">
+            <TeethTracker
+              key={store.profile.id}
+              profile={store.profile}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: Pediatric Fever & Weight-Based Dose Calculator */}
         {activeTab === 'dose' && (
-          <MedicineDoseCalculator
-            profile={store.profile}
-            latestGrowth={latestGrowth}
-            userRole={store.userRole}
-            onNavigateTab={setActiveTab}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Medicine Dose Calculator">
+            <MedicineDoseCalculator
+              key={store.profile.id}
+              profile={store.profile}
+              latestGrowth={latestGrowth}
+              userRole={store.userRole}
+              onNavigateTab={setActiveTab}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab: Maternal Recovery & Care */}
         {activeTab === 'mom' && (
-          <MomCareTracker
-            profile={store.profile}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Mom Care Tracker">
+            <MomCareTracker
+              key={store.profile.id}
+              profile={store.profile}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab 4: Doctor Visits & Prescriptions */}
         {activeTab === 'doctor' && (
-          <div className="space-y-8">
-            <DoctorVisitVault
-              profile={store.profile}
-              growthRecords={store.growthRecords}
-              vaccines={store.vaccines}
-              questions={store.questions}
-              symptoms={store.symptoms}
-              onAddQuestion={store.addDoctorQuestion}
-              onToggleQuestion={store.toggleDoctorQuestion}
-              onDeleteQuestion={store.deleteDoctorQuestion}
-              onAddSymptom={store.addSymptom}
-              userRole={store.userRole}
-              onNavigateTab={setActiveTab}
-            />
-            <PrescriptionVault
-              childId={store.profile.id}
-              prescriptions={store.prescriptions}
-              onAddPrescription={store.addPrescription}
-              onDeletePrescription={store.deletePrescription}
-              userRole={store.userRole}
-            />
-          </div>
+          <ErrorBoundary fallbackTitle="Could not load Doctor Visit & Prescriptions">
+            <div className="space-y-8">
+              <DoctorVisitVault
+                key={`dv_${store.profile.id}`}
+                profile={store.profile}
+                growthRecords={store.growthRecords}
+                vaccines={store.vaccines}
+                questions={store.questions}
+                symptoms={store.symptoms}
+                onAddQuestion={store.addDoctorQuestion}
+                onToggleQuestion={store.toggleDoctorQuestion}
+                onDeleteQuestion={store.deleteDoctorQuestion}
+                onAddSymptom={store.addSymptom}
+                onDeleteSymptom={store.deleteSymptom}
+                userRole={store.userRole}
+                onNavigateTab={setActiveTab}
+              />
+              <PrescriptionVault
+                key={`rx_${store.profile.id}`}
+                childId={store.profile.id}
+                prescriptions={store.prescriptions}
+                onAddPrescription={store.addPrescription}
+                onDeletePrescription={store.deletePrescription}
+                userRole={store.userRole}
+              />
+            </div>
+          </ErrorBoundary>
         )}
 
         {/* Tab 5: Memories & Milestones */}
         {activeTab === 'memories' && (
-          <MemoryTimeline
-            profile={store.profile}
-            memories={store.memories}
-            onAddMemory={store.addMemory}
-            onDeleteMemory={store.deleteMemory}
-            onToggleFavorite={store.toggleFavoriteMemory}
-            userRole={store.userRole}
-          />
+          <ErrorBoundary fallbackTitle="Could not load Memory Scrapbook">
+            <MemoryTimeline
+              key={store.profile.id}
+              profile={store.profile}
+              memories={store.memories}
+              onAddMemory={store.addMemory}
+              onDeleteMemory={store.deleteMemory}
+              onToggleFavorite={store.toggleFavoriteMemory}
+              userRole={store.userRole}
+            />
+          </ErrorBoundary>
         )}
 
       </main>
 
       {/* Gentle Footer */}
-      <footer className="border-t border-[#EAE6DF] dark:border-[#2D2B33] py-5 text-center text-xs text-[#75706B] dark:text-[#9E9892] mb-16 md:mb-0">
+      <footer className="border-t border-[#EAE6DF] dark:border-[#2D2B33] py-5 text-center text-xs text-[#75706B] dark:text-[#9E9892] mb-[calc(4rem+max(env(safe-area-inset-bottom,0px),8px))] md:mb-0">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
           <div className="flex items-center gap-2">
             <Heart className="w-3.5 h-3.5 text-[#E2765A] fill-current" />
@@ -550,12 +666,30 @@ export default function Home() {
               if (foodRaw) weaningFoods = JSON.parse(foodRaw);
 
               const teethRaw = localStorage.getItem(`dayone_teeth_${store.profile.id}`);
-              if (teethRaw) teethRecords = JSON.parse(teethRaw);
+              if (teethRaw) {
+                const parsed = JSON.parse(teethRaw);
+                teethRecords = Array.isArray(parsed) ? parsed : Object.values(parsed);
+              }
 
               const msRaw = localStorage.getItem(`dayone_milestones_${store.profile.id}`);
-              if (msRaw) milestones = JSON.parse(msRaw);
+              if (msRaw) {
+                const parsed = JSON.parse(msRaw);
+                if (Array.isArray(parsed)) {
+                  milestones = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                  milestones = Object.entries(parsed).map(([key, val]) => ({
+                    id: `${store.profile.id}_${key}`,
+                    childId: store.profile.id,
+                    milestoneKey: key,
+                    isAchieved: Boolean(val),
+                    achievedDate: val ? new Date().toISOString().split('T')[0] : undefined,
+                  }));
+                }
+              }
 
-              const ttRaw = localStorage.getItem('dayone_tummy_sessions');
+              const ttRaw =
+                localStorage.getItem(`dayone_tummy_sessions_${store.profile.id}`) ||
+                localStorage.getItem('dayone_tummy_sessions');
               if (ttRaw) tummyTimeSessions = JSON.parse(ttRaw);
 
               for (let i = 0; i < localStorage.length; i++) {

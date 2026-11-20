@@ -57,10 +57,79 @@ body {
   animation: fadeInQuick 160ms var(--ease-out) both;
 }
 
-/* Emil Kowalski Native Touch & Press Feedback */
+/* Emil Kowalski Origin-Aware Popover Animation (Never animate from scale(0)) */
+@keyframes popoverIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-popover {
+  animation: popoverIn 160ms var(--ease-out) both;
+}
+
+/* iOS-Style Drawer Sheet Slide Animations (Snappy exit under 250ms with --ease-drawer) */
+@keyframes sheetSlideUp {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetSlideDown {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.sheet-entering {
+  animation: sheetSlideUp 220ms var(--ease-drawer) both;
+}
+
+.sheet-exiting {
+  animation: sheetSlideDown 190ms var(--ease-out) both;
+}
+
+.backdrop-entering {
+  animation: backdropFadeIn 200ms var(--ease-out) both;
+}
+
+.backdrop-exiting {
+  animation: backdropFadeOut 180ms var(--ease-out) both;
+}
+
+/* Emil Kowalski Native Touch & Press Feedback (scale(0.96) with cubic-bezier(0.23, 1, 0.32, 1)) */
 .tap-feedback,
 .tap-spring {
-  transition: transform 120ms var(--ease-out), opacity 120ms ease-out;
+  transition: transform 120ms var(--ease-out), opacity 120ms var(--ease-out);
   will-change: transform;
   -webkit-user-select: none;
   user-select: none;
@@ -69,7 +138,7 @@ body {
 
 .tap-feedback:active,
 .tap-spring:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
   opacity: 0.92;
 }
 
@@ -81,6 +150,15 @@ body {
   .card-interactive:hover {
     border-color: rgba(68, 99, 75, 0.28);
     box-shadow: 0 4px 14px -3px rgba(25, 28, 26, 0.06);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .tap-spring:hover,
+  .tap-feedback:hover,
+  .card-interactive:hover {
+    transform: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -121,10 +199,13 @@ button, a, input, select, textarea, [role="button"] {
 
 /* Safe area padding utilities for native status bar & home indicator */
 .safe-top {
-  padding-top: max(env(safe-area-inset-top), 0px);
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
 }
 .safe-bottom {
-  padding-bottom: max(env(safe-area-inset-bottom), 10px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+.safe-mb-bottom {
+  margin-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
 }
 
 /* Base border color inheritance */

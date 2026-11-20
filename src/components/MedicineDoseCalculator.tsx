@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calculator,
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
   Sparkles,
   RotateCcw,
   Plus,
+  Minus,
   Trash2,
   Copy,
   Check,
@@ -26,10 +27,17 @@ import {
   Stethoscope,
   ChevronRight,
   Phone,
+  Scale,
+  Sun,
+  Flame,
+  AlertCircle,
+  HelpCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { ChildProfile, GrowthRecord, MedicineDoseLog } from '@/lib/types';
 import { INITIAL_MEDICINE_LOGS } from '@/lib/initialData';
 import { syncSingleRecord, deleteSingleRecord } from '@/lib/syncService';
+import { generateUniqueId } from '@/lib/store';
 import confetti from 'canvas-confetti';
 import { ActiveTab } from './BottomNav';
 
@@ -40,7 +48,7 @@ interface MedicineDoseCalculatorProps {
   onNavigateTab?: (tab: ActiveTab) => void;
 }
 
-export type MedicineCategory = 'fever' | 'colic' | 'supplement' | 'cold' | 'digestive';
+export type MedicineCategory = 'fever' | 'supplement' | 'colic' | 'cold' | 'digestive';
 
 export interface MedicineFormulation {
   id: string;
@@ -50,7 +58,6 @@ export interface MedicineFormulation {
   concentrationMgPerMl: number;
   concentrationDisplay: string;
   isWeightBased: boolean;
-  isChildPrescription?: boolean;
   standardDoseMgPerKg?: number;
   fixedDoseDisplay?: string;
   minAgeMonths: number;
@@ -59,67 +66,15 @@ export interface MedicineFormulation {
   formType: 'drops' | 'suspension' | 'sachet';
   usageGuidance: string;
   indication: string;
+  highlightPill?: string;
 }
 
 export const COMMON_MEDICATIONS: MedicineFormulation[] = [
-  // --- ⭐ PRESCRIBED FOR HER: ACTIVE DAILY & SOS REGIMEN ---
-  {
-    id: 'kidrich_d3',
-    brand: "Dr. Reddy's Kidrich D3 Drops",
-    generic: 'Cholecalciferol (Vitamin D3 400 IU / 0.5 ml)',
-    category: 'supplement',
-    concentrationMgPerMl: 800,
-    concentrationDisplay: '400 IU per 0.5 ml',
-    isWeightBased: false,
-    fixedDoseDisplay: '0.5 mL (400 IU) once daily',
-    isChildPrescription: true,
-    minAgeMonths: 0,
-    minIntervalHours: 24,
-    maxDosesPerDay: 1,
-    formType: 'drops',
-    usageGuidance: "Give exactly 0.5 ml once daily every morning using the marked dropper. Essential Dr. Reddy's Vitamin D3 for infant bone mineralization, teeth buds, and immune strength.",
-    indication: "⭐ Baby's Daily Vitamin D3",
-  },
-  {
-    id: 'bavon_drops',
-    brand: 'Bavon Drops',
-    generic: 'Multivitamins, B-Complex & L-Lysine Amino Acids',
-    category: 'supplement',
-    concentrationMgPerMl: 0,
-    concentrationDisplay: 'Pediatric Multivitamin Drops',
-    isWeightBased: false,
-    fixedDoseDisplay: '0.5 mL once daily post-feed',
-    isChildPrescription: true,
-    minAgeMonths: 0,
-    minIntervalHours: 24,
-    maxDosesPerDay: 1,
-    formType: 'drops',
-    usageGuidance: 'Give 0.5 ml once daily after feeding. Supports cellular metabolism, weight gain, and infant nutritional appetite.',
-    indication: "⭐ Baby's Daily Multivitamin",
-  },
-  {
-    id: 'colimex_df',
-    brand: 'Colimex DF Drops (Wallace)',
-    generic: 'Simethicone (40 mg/ml) Dill Oil Free',
-    category: 'colic',
-    concentrationMgPerMl: 40,
-    concentrationDisplay: 'Simethicone 40 mg / mL',
-    isWeightBased: false,
-    fixedDoseDisplay: '4 to 8 drops (0.2–0.4 mL) before feeds',
-    isChildPrescription: true,
-    minAgeMonths: 0,
-    minIntervalHours: 6,
-    maxDosesPerDay: 4,
-    formType: 'drops',
-    usageGuidance: 'Give 4–8 drops 15 minutes before breast/bottle feeds or SOS during acute gas crying spells. Relieves painful trapped gas bubbles gently.',
-    indication: "⭐ Baby's Active Colic Relief",
-  },
-
-  // --- FEVER & PAIN (WEIGHT-BASED) ---
+  // --- PARACETAMOL / FEVER ---
   {
     id: 'crocin_drops',
     brand: 'Crocin / Calpol Infant Drops',
-    generic: 'Paracetamol (Acetaminophen)',
+    generic: 'Paracetamol (100 mg / 1 mL)',
     category: 'fever',
     concentrationMgPerMl: 100,
     concentrationDisplay: '100 mg / 1 mL',
@@ -129,63 +84,103 @@ export const COMMON_MEDICATIONS: MedicineFormulation[] = [
     minIntervalHours: 4,
     maxDosesPerDay: 4,
     formType: 'drops',
-    usageGuidance: 'Use calibrated 0.1ml dropper. For fever >38.0°C (100.4°F) or post-vaccine pain.',
-    indication: 'Post-Vaccine Fever & Teething Pain',
+    usageGuidance: 'Use calibrated oral dropper. For fever >38.0°C (100.4°F) or post-immunization discomfort.',
+    indication: 'Infant Fever & Teething',
+    highlightPill: 'Rapid Infant Drops',
   },
   {
     id: 'calpol_120',
     brand: 'Calpol / Crocin 120 Suspension',
-    generic: 'Paracetamol (24 mg/ml)',
+    generic: 'Paracetamol (120 mg / 5 mL)',
     category: 'fever',
     concentrationMgPerMl: 24,
-    concentrationDisplay: '120 mg / 5 mL',
+    concentrationDisplay: '120 mg / 5 mL (24 mg/ml)',
     isWeightBased: true,
     standardDoseMgPerKg: 15,
     minAgeMonths: 2,
     minIntervalHours: 4,
     maxDosesPerDay: 4,
     formType: 'suspension',
-    usageGuidance: 'Shake bottle well. Measure with pediatric dosing syringe or spoon.',
-    indication: 'Infant Fever & Body Aches',
+    usageGuidance: 'Shake bottle thoroughly. Measure with oral syringe. Minimum 4 hours between doses.',
+    indication: 'Infant Fever & Pain Relief',
+    highlightPill: 'Syrup 120',
   },
   {
     id: 'calpol_250_ds',
     brand: 'Calpol 250 / Crocin DS Syrup',
-    generic: 'Paracetamol (50 mg/ml)',
+    generic: 'Paracetamol (250 mg / 5 mL Double Strength)',
     category: 'fever',
     concentrationMgPerMl: 50,
-    concentrationDisplay: '250 mg / 5 mL (DS)',
+    concentrationDisplay: '250 mg / 5 mL (50 mg/ml)',
     isWeightBased: true,
     standardDoseMgPerKg: 15,
     minAgeMonths: 6,
     minIntervalHours: 4,
     maxDosesPerDay: 4,
     formType: 'suspension',
-    usageGuidance: 'Double strength formulation for older infants (>7 kg) to reduce liquid volume.',
-    indication: 'Moderate to High Fever',
+    usageGuidance: 'Double-strength formulation for older infants (>7 kg) to reduce liquid swallow volume.',
+    indication: 'High Fever (>38.5°C)',
+    highlightPill: 'Double Strength DS',
   },
   {
     id: 'ibugesic_plus',
-    brand: 'Ibuprofen / Nurofen Syrup',
-    generic: 'Ibuprofen (20 mg/ml)',
+    brand: 'Ibuprofen / Ibugesic Suspension',
+    generic: 'Ibuprofen (100 mg / 5 mL)',
     category: 'fever',
     concentrationMgPerMl: 20,
-    concentrationDisplay: '100 mg / 5 mL',
+    concentrationDisplay: '100 mg / 5 mL (20 mg/ml)',
     isWeightBased: true,
     standardDoseMgPerKg: 10,
     minAgeMonths: 6,
     minIntervalHours: 6,
     maxDosesPerDay: 3,
     formType: 'suspension',
-    usageGuidance: 'Strictly for infants 6 months and older. Give after milk/feed, never on empty stomach.',
+    usageGuidance: 'Strictly for infants 6 months and older. Give after breastfeed/milk, never on empty stomach.',
     indication: 'High Fever & Inflammation',
+    highlightPill: '6+ Months Only',
   },
 
-  // --- COLIC & DIGESTIVE COMFORT ---
+  // --- VITAMIN D3 & ESSENTIAL SUPPLEMENTS ---
   {
-    id: 'colicaid_drops',
-    brand: 'Colicaid Gripe Drops',
-    generic: 'Simethicone 40mg + Dill Oil + Fennel',
+    id: 'kidrich_d3',
+    brand: "Kidrich / D3 Infant Drops",
+    generic: 'Cholecalciferol (Vitamin D3 400 IU / 0.5 mL)',
+    category: 'supplement',
+    concentrationMgPerMl: 800,
+    concentrationDisplay: '400 IU per 0.5 mL',
+    isWeightBased: false,
+    fixedDoseDisplay: '0.5 mL (400 IU) once daily',
+    minAgeMonths: 0,
+    minIntervalHours: 24,
+    maxDosesPerDay: 1,
+    formType: 'drops',
+    usageGuidance: 'Give exactly 0.5 mL once daily every morning using marked dropper. Essential for bone mineralization and immune health.',
+    indication: "Baby's Daily Vitamin D3",
+    highlightPill: 'Daily Essential',
+  },
+  {
+    id: 'bavon_drops',
+    brand: 'Bavon Pediatric Drops',
+    generic: 'Multivitamins, B-Complex & Lysine',
+    category: 'supplement',
+    concentrationMgPerMl: 0,
+    concentrationDisplay: 'Pediatric Multivitamin Drops',
+    isWeightBased: false,
+    fixedDoseDisplay: '0.5 mL once daily post-feed',
+    minAgeMonths: 0,
+    minIntervalHours: 24,
+    maxDosesPerDay: 1,
+    formType: 'drops',
+    usageGuidance: 'Give 0.5 mL once daily after morning feed. Supports healthy infant appetite and cell metabolism.',
+    indication: 'Daily Multivitamin',
+    highlightPill: 'Multivitamin',
+  },
+
+  // --- COLIC & DIGESTIVE ---
+  {
+    id: 'colimex_df',
+    brand: 'Colimex / Colicaid Drops',
+    generic: 'Simethicone (40 mg / mL) Dill Oil Free',
     category: 'colic',
     concentrationMgPerMl: 40,
     concentrationDisplay: 'Simethicone 40 mg / mL',
@@ -195,30 +190,13 @@ export const COMMON_MEDICATIONS: MedicineFormulation[] = [
     minIntervalHours: 6,
     maxDosesPerDay: 4,
     formType: 'drops',
-    usageGuidance: 'Give 15 minutes before breast/bottle feeds. Breaks down painful trapped gas bubbles.',
-    indication: 'Infant Colic, Bloating & Crying Spells',
+    usageGuidance: 'Give 4–8 drops 15 minutes before breast or bottle feed or SOS during acute gas crying spells.',
+    indication: 'Colic & Trapped Gas Spells',
+    highlightPill: 'Gas & Colic Relief',
   },
-  {
-    id: 'enterogermina',
-    brand: 'Enterogermina Probiotic Vials',
-    generic: 'Bacillus clausii spores (2 Billion)',
-    category: 'digestive',
-    concentrationMgPerMl: 0,
-    concentrationDisplay: '2 Billion Spores / 5 mL vial',
-    isWeightBased: false,
-    fixedDoseDisplay: '1 mini bottle (5 mL) daily',
-    minAgeMonths: 1,
-    minIntervalHours: 24,
-    maxDosesPerDay: 1,
-    formType: 'suspension',
-    usageGuidance: 'Twist plastic cap, shake, and drink directly or mix with milk/water. Restores gut flora.',
-    indication: 'Loose Stools & Antibiotic Recovery',
-  },
-
-  // --- COLD & NASAL CONGESTION ---
   {
     id: 'nasoclear_saline',
-    brand: 'Nasoclear / Baby Saline Drops',
+    brand: 'Nasoclear / Purified Saline Drops',
     generic: '0.9% Purified Sodium Chloride',
     category: 'cold',
     concentrationMgPerMl: 9,
@@ -229,19 +207,19 @@ export const COMMON_MEDICATIONS: MedicineFormulation[] = [
     minIntervalHours: 3,
     maxDosesPerDay: 6,
     formType: 'drops',
-    usageGuidance: '100% medication-free! Instill 5 mins before breastfeeds or sleep to clear dried nasal mucus.',
-    indication: 'Stuffy Nose, Cold & Congestion',
+    usageGuidance: '100% medication-free! Instill 5 mins before breastfeeds or sleep to clear dried nasal congestion.',
+    indication: 'Stuffy Nose & Cold',
+    highlightPill: 'Congestion Relief',
   },
 ];
 
 const DOSE_REASONS = [
+  'Viral Fever (>38°C)',
   'Post-Vaccine Fever',
   'Teething Pain & Fussiness',
-  'Viral Fever (>38°C)',
-  'Colic & Trapped Gas',
   'Daily Morning Supplement',
+  'Colic & Trapped Gas',
   'Stuffy Nose / Cold',
-  'Loose Stools / Diarrhea',
   'Doctor Advised Dose',
 ];
 
@@ -253,27 +231,30 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
   userRole = 'parent',
   onNavigateTab,
 }) => {
-  // Baby's active weight in kg
+  // Baby's active weight in kg (bounded between 2.0 and 25.0 kg)
   const defaultWeight = latestGrowth?.weightKg || profile.birthWeightKg || 8.45;
-  const [weightKg, setWeightKg] = useState<number>(defaultWeight);
-  const [isEditingWeight, setIsEditingWeight] = useState<boolean>(false);
+  const [weightKg, setWeightKg] = useState<number>(() => {
+    return Math.min(25.0, Math.max(2.0, parseFloat(defaultWeight.toFixed(2))));
+  });
+
+  const [selectedFormulationId, setSelectedFormulationId] = useState<string>('crocin_drops');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [selectedFormulationId, setSelectedFormulationId] = useState<string>('calpol_120');
 
   // Temperature state
   const [currentTempC, setCurrentTempC] = useState<number>(38.2);
   const [tempSite, setTempSite] = useState<'ear' | 'armpit' | 'forehead'>('ear');
 
-  // Log dose modal & form state
+  // Log dose modal
   const [showLogModal, setShowLogModal] = useState<boolean>(false);
-  const [customDoseMl, setCustomDoseMl] = useState<number>(5.3);
+  const [customDoseMl, setCustomDoseMl] = useState<number>(1.2);
   const [doseTemperatureC, setDoseTemperatureC] = useState<string>('38.2');
   const [doseReason, setDoseReason] = useState<string>('Viral Fever (>38°C)');
   const [administeredBy, setAdministeredBy] = useState<string>('Mom 👩');
   const [doseNotes, setDoseNotes] = useState<string>('');
   const [doseTime, setDoseTime] = useState<string>(() => new Date().toISOString().slice(0, 16));
+  const [copiedHistory, setCopiedHistory] = useState<boolean>(false);
 
-  // Stored medication history list
+  // Stored dose history
   const [medHistory, setMedHistory] = useState<MedicineDoseLog[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -282,28 +263,34 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
-      } catch (e) {
+      } catch {
         // fallback
       }
     }
     return INITIAL_MEDICINE_LOGS;
   });
 
-  const [copiedHistory, setCopiedHistory] = useState<boolean>(false);
+  // Active formulation
+  const activeFormulation = useMemo(() => {
+    return COMMON_MEDICATIONS.find((f) => f.id === selectedFormulationId) || COMMON_MEDICATIONS[0];
+  }, [selectedFormulationId]);
 
-  // Active selected formulation
-  const activeFormulation = COMMON_MEDICATIONS.find((f) => f.id === selectedFormulationId) || COMMON_MEDICATIONS[0];
+  // Exact Dose Calculation
+  // Standard paracetamol: 15 mg/kg. Ibuprofen: 10 mg/kg.
+  const { calculatedMg, calculatedMl } = useMemo(() => {
+    if (!activeFormulation.isWeightBased || !activeFormulation.standardDoseMgPerKg) {
+      return { calculatedMg: 0, calculatedMl: 0 };
+    }
+    const mg = Math.round(weightKg * activeFormulation.standardDoseMgPerKg);
+    const ml = parseFloat((mg / activeFormulation.concentrationMgPerMl).toFixed(1));
+    return { calculatedMg: mg, calculatedMl: ml };
+  }, [weightKg, activeFormulation]);
 
-  // Exact dose calculation
-  let calculatedMl = 0;
-  let calculatedMg = 0;
-  if (activeFormulation.isWeightBased && activeFormulation.standardDoseMgPerKg) {
-    calculatedMg = Math.round(weightKg * activeFormulation.standardDoseMgPerKg);
-    calculatedMl = parseFloat((calculatedMg / activeFormulation.concentrationMgPerMl).toFixed(1));
-  }
+  // Double-dose prevention countdown timer
+  const lastDoseForActiveMed = useMemo(() => {
+    return medHistory.find((m) => m.brandName === activeFormulation.brand || m.medicineName.includes(activeFormulation.brand));
+  }, [medHistory, activeFormulation]);
 
-  // Active Safety Interval Lock check
-  const lastDoseForActiveMed = medHistory.find((m) => m.brandName === activeFormulation.brand);
   const [secondsUntilNextDose, setSecondsUntilNextDose] = useState<number>(0);
 
   useEffect(() => {
@@ -330,16 +317,23 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
     return () => clearInterval(timer);
   }, [lastDoseForActiveMed, activeFormulation]);
 
+  // Adjust weight helpers
+  const handleWeightStep = (delta: number) => {
+    setWeightKg((prev) => {
+      const next = parseFloat((prev + delta).toFixed(2));
+      return Math.min(25.0, Math.max(2.0, next));
+    });
+  };
+
+  // Open Log Modal
   const openLogModal = () => {
-    let initialMl = 0.5;
+    let initialMl = 1.2;
     if (activeFormulation.isWeightBased && calculatedMl > 0) {
       initialMl = calculatedMl;
     } else if (activeFormulation.id === 'colimex_df') {
       initialMl = 0.3;
     } else if (activeFormulation.id === 'kidrich_d3' || activeFormulation.id === 'bavon_drops') {
       initialMl = 0.5;
-    } else {
-      initialMl = 1.0;
     }
     setCustomDoseMl(initialMl);
     setDoseTemperatureC(currentTempC.toString());
@@ -349,11 +343,10 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
 
   const handleSaveDoseLog = (e: React.FormEvent) => {
     e.preventDefault();
-
     const finalMl = customDoseMl > 0 ? customDoseMl : (calculatedMl > 0 ? calculatedMl : 0.5);
 
     const newLog: MedicineDoseLog = {
-      id: `med_${Date.now()}`,
+      id: generateUniqueId('med'),
       childId: profile.id,
       timestamp: new Date(doseTime).toISOString(),
       medicineName: `${activeFormulation.brand} (${activeFormulation.generic})`,
@@ -370,11 +363,13 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
 
     const updated = [newLog, ...medHistory];
     setMedHistory(updated);
-    localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(updated));
+    }
     setShowLogModal(false);
     setDoseNotes('');
 
-    // Real-time Cloud Sync
+    // Sync
     syncSingleRecord('medicine_logs', {
       id: newLog.id,
       child_id: profile.id,
@@ -392,12 +387,8 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
     });
 
     try {
-      confetti({
-        particleCount: 60,
-        spread: 60,
-        origin: { y: 0.6 },
-      });
-    } catch (e) {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch {
       // ignore
     }
   };
@@ -405,13 +396,14 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
   const handleDeleteLog = (id: string) => {
     const updated = medHistory.filter((m) => m.id !== id);
     setMedHistory(updated);
-    localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`dayone_med_history_${profile.id}`, JSON.stringify(updated));
+    }
     deleteSingleRecord('medicine_logs', id);
   };
 
-  const handleCopyHistoryForDoctor = () => {
+  const handleCopyHistory = () => {
     if (medHistory.length === 0) return;
-
     const lines = medHistory.slice(0, 6).map((m) => {
       const dt = new Date(m.timestamp);
       const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -424,7 +416,7 @@ export const MedicineDoseCalculator: React.FC<MedicineDoseCalculatorProps> = ({
     });
 
     const summary = `📋 *Medication History for Dr. ${profile.pediatricianName || 'Pediatrician'}*
-👶 *Patient:* ${profile.name} (Weight: ${weightKg} kg)
+👶 *Patient:* ${profile.name} (Active Weight: ${weightKg} kg)
 
 ${lines.join('\n')}
 
@@ -435,619 +427,573 @@ _Generated via DayOne Dose Assistant_`;
     setTimeout(() => setCopiedHistory(false), 2500);
   };
 
-  // Temperature status calculation
-  const getTempStatus = (temp: number) => {
-    if (temp >= 39.0) return { label: 'High Fever', color: 'bg-error-container text-on-error-container', pulse: 'bg-error' };
-    if (temp >= 37.8) return { label: 'Mild Fever', color: 'bg-tertiary-fixed text-on-tertiary-fixed', pulse: 'bg-tertiary' };
-    return { label: 'Normal Temp', color: 'bg-primary-fixed text-on-primary-fixed-variant', pulse: 'bg-primary' };
-  };
+  // Temperature calculations
+  const tempStatus = useMemo(() => {
+    if (currentTempC >= 39.0) {
+      return { label: 'High Fever Danger', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200', isHigh: true };
+    }
+    if (currentTempC >= 37.8) {
+      return { label: 'Mild Fever', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200', isHigh: false };
+    }
+    return { label: 'Normal Temperature', color: 'bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1]', isHigh: false };
+  }, [currentTempC]);
 
-  const tempStatus = getTempStatus(currentTempC);
-
-  // Thermal bar position (36.0 to 40.0 range)
-  const tempPercent = Math.min(100, Math.max(0, ((currentTempC - 36.0) / (40.0 - 36.0)) * 100));
-
-  // Syringe fill calculation (up to 10ml)
-  const syringeMl = activeFormulation.isWeightBased ? calculatedMl : (activeFormulation.id === 'colimex_df' ? 0.3 : 0.5);
-  const syringePercent = Math.min(100, Math.max(5, (syringeMl / 10) * 100));
-
-  // Wait time string
   const waitMinutes = Math.floor(secondsUntilNextDose / 60);
   const waitHours = Math.floor(waitMinutes / 60);
   const remMinutes = waitMinutes % 60;
   const waitDisplay = `${waitHours.toString().padStart(2, '0')}:${remMinutes.toString().padStart(2, '0')}`;
 
-  const filteredMeds = COMMON_MEDICATIONS.filter((m) => {
-    if (activeCategory === 'fever') return m.category === 'fever';
-    if (activeCategory === 'supplements') return m.category === 'supplement';
-    if (activeCategory === 'colic') return m.category === 'colic';
-    return true;
-  });
+  // Syringe fill calculation
+  const syringeDisplayMl = activeFormulation.isWeightBased
+    ? calculatedMl
+    : activeFormulation.id === 'colimex_df'
+    ? 0.3
+    : 0.5;
+  const syringePercent = Math.min(100, Math.max(8, (syringeDisplayMl / 10) * 100));
 
   return (
-    <div className="flex flex-col w-full pb-8 space-y-6">
-      {/* Quick Navigation to Doctor Visit Vault */}
-      {onNavigateTab && (
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-secondary">local_hospital</span>
-            <span className="text-on-surface font-medium">
-              Need to check prescriptions or notes from the pediatrician?
+    <div className="space-y-4 sm:space-y-5 animate-reveal">
+      {/* 1. Header with Safety Context */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#C8EBCC]/60 dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] text-[11px] font-bold">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#44634B] dark:text-[#ADCFB1]" />
+              <span>Pediatric Safe Dosing Guide</span>
+            </span>
+            <span className="text-[11px] font-semibold text-[#424842] dark:text-[#9E9892]">
+              Standard 15 mg/kg Formula
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('doctor')}
-            className="px-3 py-1.5 rounded-full bg-secondary text-on-secondary font-semibold text-[11px] shrink-0 active:scale-95 transition-all shadow-xs"
-          >
-            Clinic &amp; Rx →
-          </button>
-        </div>
-      )}
-
-      {/* Safety Disclaimer & Child Context Banner */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="font-label-sm text-label-sm text-primary tracking-wide uppercase font-bold">
-              Weight-Based Care
-            </span>
-            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold">
-              {profile.name}&apos;s Dose Assistant
-            </h2>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm shadow-xs font-semibold">
-            <span className="material-symbols-outlined text-[16px]">verified_user</span>
-            <span>Pediatric Dosing</span>
-          </div>
-        </div>
-
-        {/* Warning Pill Badge */}
-        <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-tertiary-fixed/30 text-on-tertiary-fixed-variant border border-tertiary-fixed/40">
-          <div className="w-7 h-7 rounded-full bg-tertiary-fixed-dim/50 flex items-center justify-center shrink-0 text-tertiary">
-            <span className="material-symbols-outlined text-[18px]">warning</span>
-          </div>
-          <p className="font-body-sm text-body-sm flex-1 leading-snug">
-            Always double-check formulation with the bottle label &amp; consult your pediatrician before administering.
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
+            Medicine &amp; Dose Calculator
+          </h2>
+          <p className="text-xs text-[#424842] dark:text-[#9E9892] mt-0.5">
+            Weight-calibrated infant syrup &amp; drop volumes with double-dose safety guard
           </p>
         </div>
 
-        {/* Child Weight Chip & Override Row */}
-        <div className="flex items-center justify-between bg-surface-container-lowest p-3.5 rounded-2xl shadow-sm border border-outline-variant/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">
-              <span className="material-symbols-outlined text-[20px]">scale</span>
+        {onNavigateTab && (
+          <button
+            type="button"
+            onClick={() => onNavigateTab('doctor')}
+            className="tap-feedback min-h-[44px] px-3.5 py-2 rounded-full bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          >
+            <Stethoscope className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1]" />
+            <span>Doctor Vault &amp; Rx →</span>
+          </button>
+        )}
+      </div>
+
+      {/* 2. Pediatric Weight Stepper & Slider with High-Visibility Output */}
+      <div className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 sm:p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-3.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] flex items-center justify-center">
+              <Scale className="w-4 h-4" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                {isEditingWeight ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={weightKg}
-                      onChange={(e) => setWeightKg(parseFloat(e.target.value) || 4.5)}
-                      className="w-20 px-2 py-0.5 rounded-lg border border-primary text-sm font-bold bg-surface-container-low"
-                    />
-                    <span className="text-sm font-bold">kg</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingWeight(false)}
-                      className="ml-1 text-xs px-2 py-0.5 rounded-full bg-primary text-white font-semibold"
-                    >
-                      Done
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="font-headline-md text-headline-md text-on-surface font-bold">
-                      {weightKg} kg
-                    </span>
-                    <span className="font-label-sm text-label-sm text-outline">• Active weight</span>
-                  </>
-                )}
-              </div>
-              <span className="font-label-sm text-label-sm text-outline">
-                {latestGrowth ? `Recorded from ${latestGrowth.date} checkup` : 'Standard default calculation'}
+            <div>
+              <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                {profile.name}&apos;s Active Weight
+              </span>
+              <span className="text-[11px] text-[#424842] dark:text-[#9E9892] block">
+                {latestGrowth ? `From ${latestGrowth.date} wellness checkup` : 'Adjust to current scale weight'}
               </span>
             </div>
           </div>
-          {!isEditingWeight && (
-            <button
-              onClick={() => setIsEditingWeight(true)}
-              className="px-3.5 py-1.5 rounded-full bg-surface-container text-primary font-label-md text-label-md active:scale-95 transition-all flex items-center gap-1 hover:bg-surface-container-high"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[15px]">edit</span>
-              <span>Override</span>
-            </button>
-          )}
-        </div>
-      </section>
 
-      {/* Medication Formulation Selector (Horizontal Scroll) */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="font-label-md text-label-md text-outline uppercase tracking-wider font-semibold">
-            Select Formulation
-          </span>
-          <span className="font-label-sm text-label-sm text-primary font-semibold">
-            {activeFormulation.isWeightBased ? `${activeFormulation.standardDoseMgPerKg} mg/kg calculator active` : 'Fixed pediatric protocol'}
-          </span>
+          <div className="text-right">
+            <span className="text-3xl sm:text-4xl font-extrabold text-[#44634B] dark:text-[#ADCFB1] tabular-nums">
+              {weightKg.toFixed(2)}
+            </span>
+            <span className="text-sm font-bold text-[#424842] dark:text-[#9E9892] ml-1">kg</span>
+          </div>
         </div>
 
-        {/* Formulation pills */}
-        <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1">
-          {filteredMeds.map((form) => {
-            const isSelected = selectedFormulationId === form.id;
+        {/* Smooth Weight Slider */}
+        <div className="space-y-1 pt-1">
+          <input
+            type="range"
+            min="2.0"
+            max="22.0"
+            step="0.05"
+            value={weightKg}
+            onChange={(e) => setWeightKg(parseFloat(parseFloat(e.target.value).toFixed(2)))}
+            className="w-full h-2.5 bg-[#E0E3DF] dark:bg-[#2D382F] rounded-lg appearance-none cursor-pointer accent-[#44634B] dark:accent-[#ADCFB1]"
+          />
+          <div className="flex justify-between text-[10px] text-[#424842] dark:text-[#9E9892] font-semibold px-1">
+            <span>Newborn (2.5 kg)</span>
+            <span>6m (7.5 kg)</span>
+            <span>12m (9.5 kg)</span>
+            <span>2yr (12+ kg)</span>
+          </div>
+        </div>
+
+        {/* Stepper Buttons (≥44px Touch Targets) */}
+        <div className="grid grid-cols-4 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => handleWeightStep(-0.5)}
+            className="tap-feedback min-h-[44px] rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold flex items-center justify-center border border-[#E0E3DF] dark:border-[#2D382F] hover:bg-[#E6E9E4] cursor-pointer"
+          >
+            -0.5 kg
+          </button>
+          <button
+            type="button"
+            onClick={() => handleWeightStep(-0.1)}
+            className="tap-feedback min-h-[44px] rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold flex items-center justify-center border border-[#E0E3DF] dark:border-[#2D382F] hover:bg-[#E6E9E4] cursor-pointer"
+          >
+            -0.1 kg
+          </button>
+          <button
+            type="button"
+            onClick={() => handleWeightStep(0.1)}
+            className="tap-feedback min-h-[44px] rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold flex items-center justify-center border border-[#E0E3DF] dark:border-[#2D382F] hover:bg-[#E6E9E4] cursor-pointer"
+          >
+            +0.1 kg
+          </button>
+          <button
+            type="button"
+            onClick={() => handleWeightStep(0.5)}
+            className="tap-feedback min-h-[44px] rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-bold flex items-center justify-center border border-[#E0E3DF] dark:border-[#2D382F] hover:bg-[#E6E9E4] cursor-pointer"
+          >
+            +0.5 kg
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Rapid Drug Selector Chips */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold text-[#424842] dark:text-[#9E9892] uppercase tracking-wider">
+            Select Pediatric Medication
+          </span>
+          <span className="text-[11px] font-semibold text-[#44634B] dark:text-[#ADCFB1]">
+            {activeFormulation.isWeightBased ? 'Weight-Calibrated' : 'Standard Routine'}
+          </span>
+        </div>
+
+        {/* Horizontal Scroll Rapid Drug Cards */}
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+          {COMMON_MEDICATIONS.map((med) => {
+            const isSelected = selectedFormulationId === med.id;
             return (
               <button
-                key={form.id}
-                onClick={() => setSelectedFormulationId(form.id)}
-                className={`shrink-0 flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-xs active:scale-95 transition-all text-left ${
-                  isSelected
-                    ? 'bg-primary text-on-primary font-semibold ring-2 ring-primary/20'
-                    : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container border border-outline-variant/30'
-                }`}
+                key={med.id}
                 type="button"
+                onClick={() => setSelectedFormulationId(med.id)}
+                className={`tap-feedback shrink-0 min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center gap-2.5 text-left border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#44634B] text-white border-[#44634B] shadow-sm'
+                    : 'bg-white dark:bg-[#1E2520] text-[#191C1A] dark:text-[#FAF8F5] border-[#E8E4DC] dark:border-[#2D382F] hover:bg-[#F1F4F0] dark:hover:bg-[#263129]'
+                }`}
               >
-                <span className={`material-symbols-outlined text-[18px] ${isSelected ? 'text-on-primary' : 'text-primary'}`}>
-                  {form.category === 'fever' ? 'water_drop' : form.category === 'supplement' ? 'wb_sunny' : 'medication_liquid'}
-                </span>
-                <div className="flex flex-col text-left">
-                  <span className="font-label-md text-label-md leading-tight truncate max-w-[170px]">
-                    {form.brand}
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-[#C8EBCC]/60 dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1]'
+                  }`}
+                >
+                  <Pill className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col min-w-0 pr-1">
+                  <span className="text-xs font-bold truncate max-w-[160px] leading-tight">
+                    {med.brand}
                   </span>
-                  <span className={`font-label-sm text-label-sm ${isSelected ? 'text-on-primary/80' : 'text-outline'}`}>
-                    {form.concentrationDisplay}
+                  <span
+                    className={`text-[10px] font-medium truncate max-w-[160px] ${
+                      isSelected ? 'text-white/80' : 'text-[#424842] dark:text-[#9E9892]'
+                    }`}
+                  >
+                    {med.concentrationDisplay}
                   </span>
                 </div>
               </button>
             );
           })}
         </div>
-      </section>
+      </div>
 
-      {/* Calculated Dosage Hero Card */}
-      <section className="flex flex-col gap-2">
-        <div className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm relative overflow-hidden border border-outline-variant/30">
-          {/* Atmospheric Sage Glow */}
-          <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-primary-fixed/30 blur-2xl pointer-events-none"></div>
-
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
-              <span className="font-label-md text-label-md text-primary font-semibold">
-                Recommended Single Dose
-              </span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">
-              {activeFormulation.isWeightBased ? `Standard ${activeFormulation.standardDoseMgPerKg} mg/kg` : 'Fixed Routine Protocol'}
-            </span>
-          </div>
-
-          {/* Core Figure Highlight */}
-          <div className="flex items-baseline gap-2 mb-1.5 relative z-10">
-            <span className="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">
-              {activeFormulation.isWeightBased ? calculatedMl : activeFormulation.fixedDoseDisplay?.split(' ')[0] || '0.5'}
-            </span>
-            <span className="font-headline-md text-headline-md text-primary font-semibold">
-              {activeFormulation.formType === 'drops' && !activeFormulation.isWeightBased ? 'drops / mL' : 'mL'}
-            </span>
-            {activeFormulation.isWeightBased && (
-              <span className="font-label-md text-label-md text-outline ml-1">
-                ({calculatedMg} mg active ingredient)
-              </span>
-            )}
-          </div>
-
-          <p className="font-body-sm text-body-sm text-on-surface-variant mb-4 relative z-10 leading-relaxed">
-            {activeFormulation.isWeightBased
-              ? `Calculated specifically for ${weightKg} kg child using ${activeFormulation.brand} (${activeFormulation.concentrationDisplay}).`
-              : activeFormulation.usageGuidance}
-          </p>
-
-          {/* Visual Syringe Guide Bar */}
-          <div className="p-3.5 bg-surface-container-low rounded-2xl mb-4 relative z-10 border border-outline-variant/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-on-surface font-label-sm text-label-sm font-medium">
-                <span className="material-symbols-outlined text-[16px] text-primary">colorize</span>
-                <span>Oral Dispenser Syringe Guide</span>
-              </div>
-              <span className="font-label-sm text-label-sm text-primary font-semibold">
-                Mark at {syringeMl} mL
-              </span>
-            </div>
-
-            {/* Syringe Barrel Graphic */}
-            <div className="relative w-full h-8 bg-surface-container-lowest rounded-xl flex items-center px-2 overflow-hidden border border-outline-variant/40">
-              {/* Fluid fill level */}
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-primary-fixed-dim/60 transition-all duration-700"
-                style={{ width: `${syringePercent}%` }}
-              ></div>
-              {/* Target indicator line */}
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-primary z-20 transition-all duration-700"
-                style={{ left: `${syringePercent}%` }}
-              >
-                <div className="w-2.5 h-2.5 rounded-full bg-primary -translate-x-[4px] -translate-y-1"></div>
-              </div>
-              {/* Syringe hash marks */}
-              <div className="w-full flex justify-between text-outline text-[10px] font-label-sm relative z-10 select-none">
-                <span>0</span>
-                <span className="opacity-40">|</span>
-                <span>2.5</span>
-                <span className="opacity-40">|</span>
-                <span className="text-primary font-bold">5.0</span>
-                <span className="opacity-40">|</span>
-                <span>7.5</span>
-                <span className="opacity-40">|</span>
-                <span>10 mL</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Administration Protocol Tag */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm relative z-10">
-            <span className="material-symbols-outlined text-primary text-[18px]">schedule</span>
-            <span>
-              Every <strong>{activeFormulation.minIntervalHours} hours</strong> as needed • Max <strong>{activeFormulation.maxDosesPerDay} times</strong> in 24h
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Safety Timer Card (Double-Dose Prevention) */}
-      <section className="flex flex-col gap-2">
-        <div className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
-                <span className="material-symbols-outlined text-[18px]">lock_clock</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-headline-md text-headline-md text-on-surface font-semibold">
-                  Dose Guard
-                </span>
-                <span className="font-label-sm text-label-sm text-outline">
-                  Prevents accidental double-dosing
-                </span>
-              </div>
-            </div>
-            <span
-              className={`px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold ${
-                secondsUntilNextDose > 0
-                  ? 'bg-secondary-fixed text-on-secondary-fixed'
-                  : 'bg-primary-fixed text-on-primary-fixed-variant'
-              }`}
-            >
-              {secondsUntilNextDose > 0 ? 'Wait Interval Active' : 'Safe Window Open'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-5 gap-3 items-center mb-5">
-            {/* Circular Progress Ring */}
-            <div className="col-span-2 flex flex-col items-center justify-center relative">
-              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-surface-container-high"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3.5"
-                ></path>
-                <path
-                  className={secondsUntilNextDose > 0 ? 'text-secondary' : 'text-primary'}
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeDasharray={`${secondsUntilNextDose > 0 ? Math.min(100, Math.round((secondsUntilNextDose / (activeFormulation.minIntervalHours * 3600)) * 100)) : 100}, 100`}
-                  strokeLinecap="round"
-                  strokeWidth="3.5"
-                ></path>
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                {secondsUntilNextDose > 0 ? (
-                  <>
-                    <span className="font-label-sm text-label-sm text-outline text-[10px]">Wait</span>
-                    <span className="font-headline-md text-headline-md text-on-surface font-bold leading-none">
-                      {waitDisplay}
-                    </span>
-                    <span className="font-label-sm text-label-sm text-outline text-[10px]">remains</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-primary text-[24px]">done_all</span>
-                    <span className="font-label-sm text-label-sm text-primary font-bold">Ready</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Dose Timing Metadata */}
-            <div className="col-span-3 flex flex-col gap-2">
-              <div className="flex flex-col bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/20">
-                <span className="font-label-sm text-label-sm text-outline">Last Administered</span>
-                <span className="font-label-md text-label-md text-on-surface font-semibold">
-                  {lastDoseForActiveMed
-                    ? new Date(lastDoseForActiveMed.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : 'No dose logged today'}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant text-xs">
-                  {lastDoseForActiveMed
-                    ? `${lastDoseForActiveMed.dosageMl} mL • ${lastDoseForActiveMed.administeredBy || 'Caregiver'}`
-                    : 'Ready for initial dose'}
-                </span>
-              </div>
-              <div className="flex flex-col bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/20">
-                <span className="font-label-sm text-label-sm text-outline">Next Permissible Window</span>
-                <span className="font-label-md text-label-md text-primary font-semibold">
-                  {secondsUntilNextDose > 0
-                    ? `Safe in ${waitDisplay}`
-                    : 'Permissible Now (SOS/Fever)'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Button to Log Dose Now */}
-          <button
-            onClick={openLogModal}
-            className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm font-semibold hover:bg-primary-container"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[20px]">add_circle</span>
-            <span>
-              Log Dose Given Now ({activeFormulation.isWeightBased ? `${calculatedMl} mL` : activeFormulation.fixedDoseDisplay?.split(' ')[0] || '0.5 mL'})
-            </span>
-          </button>
-        </div>
-      </section>
-
-      {/* Fever & Temperature Log Section */}
-      <section className="flex flex-col gap-3">
+      {/* 4. Calculated Dosage Hero Spotlight (Clear Bold Dosage) */}
+      <div className="bg-white dark:bg-[#1E2520] rounded-[24px] p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[22px]">device_thermostat</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
-              Fever &amp; Temperature Log
-            </h3>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#44634B] animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[#44634B] dark:text-[#ADCFB1]">
+              Recommended Single Dose
+            </span>
           </div>
-          <button
-            onClick={() => {
-              const newTemp = parseFloat((currentTempC + 0.2).toFixed(1));
-              setCurrentTempC(newTemp > 40.5 ? 36.5 : newTemp);
-            }}
-            className="font-label-md text-label-md text-primary font-semibold flex items-center gap-1 hover:underline"
-            type="button"
-          >
-            <span>Adjust Temp</span>
-            <span className="material-symbols-outlined text-[16px]">tune</span>
-          </button>
+
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#424842] dark:text-[#9E9892]">
+            {activeFormulation.isWeightBased
+              ? `${activeFormulation.standardDoseMgPerKg} mg/kg standard`
+              : 'Routine dose'}
+          </span>
         </div>
 
-        {/* Current Temperature Gauge Card */}
-        <div className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex flex-col">
-              <span className="font-label-sm text-label-sm text-outline">
-                Current Reading • {tempSite.toUpperCase()} Sensor
-              </span>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                  {currentTempC.toFixed(1)}°
-                </span>
-                <span className="font-headline-md text-headline-md text-on-surface">C</span>
-                <span className="font-body-sm text-body-sm text-outline ml-1">
-                  ({((currentTempC * 9) / 5 + 32).toFixed(1)}°F)
-                </span>
-              </div>
-            </div>
+        {/* Clear Bold Dosages Callout */}
+        <div className="flex items-baseline gap-2.5">
+          <span className="text-5xl sm:text-6xl font-black text-[#191C1A] dark:text-[#FAF8F5] tracking-tight tabular-nums">
+            {activeFormulation.isWeightBased
+              ? `${calculatedMl}`
+              : activeFormulation.fixedDoseDisplay?.split(' ')[0] || '0.5'}
+          </span>
+          <span className="text-2xl font-bold text-[#44634B] dark:text-[#ADCFB1]">
+            {activeFormulation.formType === 'drops' && !activeFormulation.isWeightBased ? 'drops/mL' : 'mL'}
+          </span>
+          {activeFormulation.isWeightBased && (
+            <span className="text-xs font-semibold text-[#424842] dark:text-[#9E9892] ml-1">
+              ({calculatedMg} mg active ingredient)
+            </span>
+          )}
+        </div>
 
-            {/* Status Indicator Pill */}
-            <span
-              className={`px-3 py-1 rounded-full font-label-md text-label-md font-semibold flex items-center gap-1.5 shadow-xs ${tempStatus.color}`}
+        <p className="text-xs text-[#424842] dark:text-[#A8A29E] leading-relaxed">
+          {activeFormulation.isWeightBased
+            ? `Exact dose for ${weightKg} kg child using ${activeFormulation.brand} (${activeFormulation.concentrationDisplay}).`
+            : activeFormulation.usageGuidance}
+        </p>
+
+        {/* Visual Syringe Guide Bar */}
+        <div className="p-3.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-[#191C1A] dark:text-[#FAF8F5] flex items-center gap-1.5">
+              <Droplets className="w-3.5 h-3.5 text-[#44634B] dark:text-[#ADCFB1]" />
+              <span>Oral Dispenser Syringe Guide</span>
+            </span>
+            <span className="text-[#44634B] dark:text-[#ADCFB1]">
+              Mark at {syringeDisplayMl} mL
+            </span>
+          </div>
+
+          {/* Syringe barrel graphic */}
+          <div className="relative w-full h-8 bg-white dark:bg-[#202822] rounded-xl overflow-hidden border border-[#E0E3DF] dark:border-[#2D382F] flex items-center px-2">
+            {/* Fluid fill */}
+            <div
+              className="absolute left-0 top-0 bottom-0 bg-[#C8EBCC] dark:bg-[#203D24] transition-all duration-300"
+              style={{ width: `${syringePercent}%` }}
+            />
+            {/* Marker pin */}
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-[#44634B] dark:bg-[#ADCFB1] z-20 transition-all duration-300"
+              style={{ left: `${syringePercent}%` }}
             >
-              <span className={`w-2 h-2 rounded-full ${tempStatus.pulse} animate-pulse`}></span>
-              <span>{tempStatus.label}</span>
-            </span>
-          </div>
-
-          {/* Thermal Gradient Visualizer Bar */}
-          <div className="flex flex-col gap-1.5 mb-4">
-            <div className="relative w-full h-3 rounded-full bg-gradient-to-r from-primary-fixed via-tertiary-fixed to-secondary-container">
-              {/* Marker pin */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-surface-container-lowest shadow-md flex items-center justify-center transition-all duration-300"
-                style={{ left: `${tempPercent}%` }}
-              >
-                <div className="w-2 h-2 rounded-full bg-secondary"></div>
-              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#44634B] dark:bg-[#ADCFB1] -translate-x-1 -translate-y-1" />
             </div>
-            <div className="flex justify-between font-label-sm text-label-sm text-outline px-0.5">
-              <span>Normal 36.5°</span>
-              <span>Mild 37.8°</span>
-              <span>High 39.0°+</span>
-            </div>
-          </div>
-
-          {/* Quick-Log Site Selectors */}
-          <div className="flex flex-col gap-2 pt-2">
-            <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">
-              Recording Sensor Site
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'ear', label: 'Ear', icon: 'hearing' },
-                { id: 'armpit', label: 'Armpit', icon: 'front_hand' },
-                { id: 'forehead', label: 'Forehead', icon: 'face' },
-              ].map((site) => (
-                <button
-                  key={site.id}
-                  onClick={() => setTempSite(site.id as any)}
-                  className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-2xl active:scale-95 transition-all ${
-                    tempSite === site.id
-                      ? 'bg-surface-container text-on-surface ring-1 ring-primary font-bold shadow-xs'
-                      : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
-                  }`}
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[20px] text-primary">{site.icon}</span>
-                  <span className="font-label-sm text-label-sm">{site.label}</span>
-                </button>
-              ))}
+            {/* Hash ticks */}
+            <div className="w-full flex justify-between text-[10px] font-bold text-stone-400 relative z-10 select-none">
+              <span>0</span>
+              <span>2.5</span>
+              <span>5.0</span>
+              <span>7.5</span>
+              <span>10 mL</span>
             </div>
           </div>
         </div>
 
-        {/* Pediatric Alert Box (Clinical Protocol) */}
-        <div className="p-4 rounded-3xl bg-secondary-fixed/40 text-on-secondary-fixed flex flex-col gap-2.5 shadow-xs border border-secondary-fixed/50">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[22px]">medical_services</span>
-            <span className="font-label-lg text-label-lg text-secondary font-bold">
-              When to Seek Immediate Care
-            </span>
+        {/* Administration Interval Pill */}
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] text-xs font-semibold text-[#424842] dark:text-[#9E9892]">
+          <Clock className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1] shrink-0" />
+          <span>
+            Every <strong>{activeFormulation.minIntervalHours} hours</strong> as needed • Max{' '}
+            <strong>{activeFormulation.maxDosesPerDay} times</strong> in 24 hours
+          </span>
+        </div>
+
+        {/* Log Dose CTA Button (≥48px touch target) */}
+        <button
+          type="button"
+          onClick={openLogModal}
+          className="tap-feedback w-full min-h-[48px] rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>
+            Log Dose Given Now ({activeFormulation.isWeightBased ? `${calculatedMl} mL` : `${activeFormulation.fixedDoseDisplay?.split(' ')[0] || '0.5 mL'}`})
+          </span>
+        </button>
+      </div>
+
+      {/* 5. Fever Danger Red-Flags Banner (Crucial Clinical Safety) */}
+      <div className="rounded-[24px] bg-[#FFDBD0]/40 dark:bg-[#3D1E16]/40 p-4 sm:p-5 border border-[#FE9572]/50 dark:border-[#543830] space-y-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full bg-[#99462A] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <AlertTriangle className="w-5 h-5" />
           </div>
-          <p className="font-body-sm text-body-sm text-on-secondary-fixed-variant leading-relaxed">
-            Notify your doctor immediately if {profile.name}’s temperature exceeds <strong>39.0°C (102.2°F)</strong>, breathing is labored, soft spot is bulging, or baby refuses all liquids.
-          </p>
+          <div>
+            <h3 className="font-bold text-sm text-[#762C12] dark:text-[#FFB59E]">
+              Fever Danger Red-Flags • When to Seek Immediate Care
+            </h3>
+            <p className="text-[11px] text-[#99462A] dark:text-[#FFB59E]">
+              Clinical safety thresholds for infants and toddlers
+            </p>
+          </div>
+        </div>
+
+        {/* Red flags checklist */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-[#762C12] dark:text-[#FFB59E]">
+          <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-[#99462A] shrink-0" />
+            <span>Temperature &gt; 39.0°C (102.2°F)</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-[#99462A] shrink-0" />
+            <span>Infant under 3 months with ANY fever</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-[#99462A] shrink-0" />
+            <span>Fast or labored breathing / chest retractions</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-[#99462A] shrink-0" />
+            <span>Extreme lethargy, refusal to drink, or dry diapers (&gt;8h)</span>
+          </div>
+        </div>
+
+        {/* Emergency Call Action */}
+        <div className="flex items-center gap-2.5 pt-1 flex-wrap">
           <a
-            className="self-start flex items-center gap-1.5 font-label-md text-label-md text-secondary font-bold underline decoration-secondary/40 hover:text-secondary-container"
             href={`tel:${profile.pediatricianPhone || '112'}`}
+            className="tap-feedback min-h-[44px] px-4 py-2 rounded-full bg-[#99462A] hover:bg-[#7D3821] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2"
           >
-            <span>Call Pediatric Triage / On-Call Doctor</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            <Phone className="w-4 h-4" />
+            <span>Call Pediatrician: {profile.pediatricianName || 'On-Call Clinic'}</span>
+          </a>
+
+          <a
+            href={`tel:${profile.emergencyHospital ? '112' : '112'}`}
+            className="tap-feedback min-h-[44px] px-4 py-2 rounded-full bg-white dark:bg-[#1E2520] text-[#762C12] dark:text-[#FFB59E] border border-[#FE9572]/40 text-xs font-bold flex items-center justify-center gap-1.5"
+          >
+            <span>Emergency Hospital: {profile.emergencyHospital || 'Westside Children’s Hospital'}</span>
           </a>
         </div>
-      </section>
+      </div>
 
-      {/* Today's Dose History Section */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      {/* 6. Temperature Tracker & Double-Dose Prevention Guard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Double-dose guard */}
+        <div className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 sm:p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1]" />
+              <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                Dose Guard (Interval Safety)
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                secondsUntilNextDose > 0
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
+                  : 'bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1]'
+              }`}
+            >
+              {secondsUntilNextDose > 0 ? 'Wait Interval Active' : 'Window Open'}
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F]">
+            <span className="text-[11px] text-[#424842] dark:text-[#9E9892] block font-medium">
+              Next Permissible {activeFormulation.brand}:
+            </span>
+            <div className="text-xl font-extrabold text-[#191C1A] dark:text-[#FAF8F5] mt-0.5">
+              {secondsUntilNextDose > 0 ? `Safe to administer in ${waitDisplay}` : 'Safe to administer if fever recurs'}
+            </div>
+            <span className="text-[10px] text-stone-400 block mt-1">
+              {lastDoseForActiveMed
+                ? `Last given: ${new Date(lastDoseForActiveMed.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'No dose logged yet today'}
+            </span>
+          </div>
+        </div>
+
+        {/* Temperature reading */}
+        <div className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 sm:p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Thermometer className="w-4 h-4 text-[#99462A]" />
+              <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                Baby Temperature
+              </span>
+            </div>
+            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${tempStatus.color}`}>
+              {tempStatus.label}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-3xl font-extrabold text-[#191C1A] dark:text-[#FAF8F5] tabular-nums">
+                {currentTempC.toFixed(1)}°C
+              </span>
+              <span className="text-xs text-stone-400 block mt-0.5">
+                ({((currentTempC * 9) / 5 + 32).toFixed(1)}°F) • {tempSite.toUpperCase()}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentTempC((t) => parseFloat(Math.max(35.5, t - 0.2).toFixed(1)))}
+                className="tap-feedback w-10 h-10 rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] flex items-center justify-center font-bold text-sm"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentTempC((t) => parseFloat(Math.min(41.0, t + 0.2).toFixed(1)))}
+                className="tap-feedback w-10 h-10 rounded-xl bg-[#F1F4F0] dark:bg-[#161C17] flex items-center justify-center font-bold text-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5 pt-1">
+            {(['ear', 'armpit', 'forehead'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setTempSite(s)}
+                className={`tap-feedback min-h-[36px] py-1 text-center rounded-xl text-[11px] font-bold capitalize transition-all ${
+                  tempSite === s
+                    ? 'bg-[#44634B] text-white shadow-xs'
+                    : 'bg-[#F1F4F0] dark:bg-[#161C17] text-[#424842] dark:text-[#9E9892]'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 7. Medication History Section */}
+      <div className="space-y-2.5 pt-1">
+        <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">history</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
-              Today&apos;s Dose History
+            <History className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1]" />
+            <h3 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+              Recent Dose Logs
             </h3>
           </div>
           <button
-            onClick={handleCopyHistoryForDoctor}
-            className="font-label-sm text-label-sm text-primary font-bold flex items-center gap-1 hover:underline"
             type="button"
+            onClick={handleCopyHistory}
+            className="tap-feedback flex items-center gap-1 text-xs font-bold text-[#44634B] dark:text-[#ADCFB1] hover:underline cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[15px]">
-              {copiedHistory ? 'check' : 'content_copy'}
-            </span>
-            <span>{copiedHistory ? 'Copied summary!' : 'Copy for Doctor'}</span>
+            <Copy className="w-3.5 h-3.5" />
+            <span>{copiedHistory ? 'Copied Summary!' : 'Copy for Doctor'}</span>
           </button>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {medHistory.length === 0 ? (
-            <div className="p-6 rounded-2xl bg-surface-container-lowest text-center text-on-surface-variant font-body-sm text-body-sm border border-outline-variant/30">
-              No medications logged yet today.
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1E2520] text-center text-xs text-[#424842] dark:text-[#9E9892] border border-[#E8E4DC] dark:border-[#2D382F]">
+              No medication doses logged today.
             </div>
           ) : (
             medHistory.slice(0, 5).map((log) => (
               <div
                 key={log.id}
-                className="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-xs flex items-center justify-between gap-3"
+                className="bg-white dark:bg-[#1E2520] p-3.5 rounded-2xl border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs flex items-center justify-between gap-3"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                    💧
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#C8EBCC]/60 dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] flex items-center justify-center shrink-0">
+                    <Droplets className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="font-label-md text-label-md text-on-surface font-bold">
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5] block truncate">
                       {log.brandName || log.medicineName} • {log.dosageMl} mL
-                    </div>
-                    <div className="font-label-sm text-label-sm text-outline flex items-center gap-2 mt-0.5">
-                      <span>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span>•</span>
-                      <span>{log.reason || 'Dose given'}</span>
-                      {log.administeredBy && (
-                        <>
-                          <span>•</span>
-                          <span>by {log.administeredBy}</span>
-                        </>
-                      )}
-                    </div>
+                    </span>
+                    <span className="text-[11px] text-[#424842] dark:text-[#9E9892] block mt-0.5 truncate">
+                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {log.temperatureC ? ` • ${log.temperatureC}°C` : ''}
+                      {log.reason ? ` • ${log.reason}` : ''}
+                      {log.administeredBy ? ` • by ${log.administeredBy}` : ''}
+                    </span>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleDeleteLog(log.id)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors"
                   type="button"
-                  aria-label="Delete dose record"
+                  onClick={() => handleDeleteLog(log.id)}
+                  className="tap-feedback p-2 text-stone-300 hover:text-rose-500 transition-colors"
+                  title="Delete log"
                 >
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ))
           )}
         </div>
-      </section>
+      </div>
 
-      {/* Log Dose Modal */}
+      {/* 8. Log Dose Modal */}
       {showLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-3xl p-6 shadow-2xl border border-outline-variant/40 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#1E2520] rounded-t-[28px] sm:rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150">
+            <div className="w-10 h-1 bg-stone-300 dark:bg-stone-600 rounded-full mx-auto mb-1 sm:hidden" />
+
+            <div className="flex items-center justify-between border-b border-[#E8E4DC] dark:border-[#2D382F] pb-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">medication</span>
-                <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
-                  Log Dose Given
-                </h3>
+                <div className="w-9 h-9 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] flex items-center justify-center">
+                  <Pill className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
+                    Log Medicine Given
+                  </h3>
+                  <p className="text-[11px] text-[#424842] dark:text-[#9E9892]">
+                    {activeFormulation.brand}
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setShowLogModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container"
                 type="button"
+                onClick={() => setShowLogModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDoseLog} className="space-y-4">
-              <div>
-                <label className="font-label-sm text-label-sm text-outline block mb-1">Medication</label>
-                <div className="p-2.5 rounded-xl bg-surface-container font-label-md text-label-md text-on-surface font-semibold">
-                  {activeFormulation.brand}
-                </div>
-              </div>
-
+            <form onSubmit={handleSaveDoseLog} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-label-sm text-label-sm text-outline block mb-1">Volume Given (mL)</label>
+                  <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                    Volume Given (mL)
+                  </label>
                   <input
                     type="number"
                     step="0.1"
+                    required
                     value={customDoseMl}
                     onChange={(e) => setCustomDoseMl(parseFloat(e.target.value) || 0)}
-                    className="w-full h-11 px-3 rounded-xl bg-surface-container-low text-on-surface font-headline-md font-bold text-center border border-outline-variant/30"
-                    required
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] font-black text-center text-base"
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-label-sm text-outline block mb-1">Baby Temp (°C)</label>
+                  <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                    Baby Temp (°C)
+                  </label>
                   <input
                     type="number"
                     step="0.1"
                     value={doseTemperatureC}
                     onChange={(e) => setDoseTemperatureC(e.target.value)}
-                    className="w-full h-11 px-3 rounded-xl bg-surface-container-low text-on-surface font-headline-md font-bold text-center border border-outline-variant/30"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] font-black text-center text-base"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-label-sm text-label-sm text-outline block mb-1">Reason for Dose</label>
+                <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                  Reason for Dose
+                </label>
                 <select
                   value={doseReason}
                   onChange={(e) => setDoseReason(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] font-semibold text-xs"
                 >
                   {DOSE_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -1058,17 +1004,19 @@ _Generated via DayOne Dose Assistant_`;
               </div>
 
               <div>
-                <label className="font-label-sm text-label-sm text-outline block mb-1">Administered By</label>
+                <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                  Administered By
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   {CAREGIVERS.map((cg) => (
                     <button
                       key={cg}
                       type="button"
                       onClick={() => setAdministeredBy(cg)}
-                      className={`py-2 px-3 rounded-xl font-label-sm text-label-sm font-semibold transition-all ${
+                      className={`min-h-[44px] rounded-xl font-bold text-xs transition-all ${
                         administeredBy === cg
-                          ? 'bg-primary text-on-primary'
-                          : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                          ? 'bg-[#44634B] text-white shadow-xs'
+                          : 'bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] border border-[#E0E3DF] dark:border-[#2D382F]'
                       }`}
                     >
                       {cg}
@@ -1077,19 +1025,33 @@ _Generated via DayOne Dose Assistant_`;
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div>
+                <label className="block font-bold mb-1 text-[#191C1A] dark:text-[#FAF8F5]">
+                  Clinical Notes (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Settled to sleep within 25 minutes"
+                  value={doseNotes}
+                  onChange={(e) => setDoseNotes(e.target.value)}
+                  className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-xs font-medium"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowLogModal(false)}
-                  className="flex-1 h-12 rounded-full bg-surface-container text-on-surface font-label-lg font-semibold"
+                  className="tap-feedback flex-1 min-h-[48px] rounded-full border border-stone-200 dark:border-stone-700 font-bold text-stone-600 dark:text-stone-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold shadow-md hover:bg-primary-container"
+                  className="tap-feedback flex-1 min-h-[48px] rounded-full bg-[#44634B] hover:bg-[#344738] text-white font-bold shadow-xs flex items-center justify-center gap-1.5"
                 >
-                  Confirm &amp; Log
+                  <Check className="w-4 h-4" />
+                  <span>Confirm Log</span>
                 </button>
               </div>
             </form>

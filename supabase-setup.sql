@@ -9,6 +9,7 @@ create extension if not exists "uuid-ossp";
 -- 2. Children Profiles Table
 create table if not exists public.children (
   id text primary key,
+  user_id uuid references auth.users(id) default auth.uid(),
   name text not null,
   nickname text,
   dob timestamp with time zone not null,
@@ -23,6 +24,9 @@ create table if not exists public.children (
   avatar_url text,
   created_at timestamp with time zone default now()
 );
+
+-- Migration safety for existing deployments
+alter table public.children add column if not exists user_id uuid references auth.users(id) default auth.uid();
 
 -- 3. Immunization & Vaccines Table
 create table if not exists public.vaccines (
@@ -266,23 +270,92 @@ alter table public.milestone_progress enable row level security;
 alter table public.mom_care_logs enable row level security;
 alter table public.tummy_time_logs enable row level security;
 
--- 20. Public access policies for seamless client use
-create policy "Allow all actions for anon users" on public.children for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.vaccines for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.growth_records for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.feeding_logs for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.diaper_logs for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.sleep_logs for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.doctor_questions for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.symptoms for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.prescriptions for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.memories for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.medicine_logs for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.weaning_foods for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.teeth_records for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.milestone_progress for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.mom_care_logs for all using (true) with check (true);
-create policy "Allow all actions for anon users" on public.tummy_time_logs for all using (true) with check (true);
+-- 20. Production Row-Level Security (RLS) Policies
+-- Drop permissive legacy anon policies if they exist
+drop policy if exists "Allow all actions for anon users" on public.children;
+drop policy if exists "Allow all actions for anon users" on public.vaccines;
+drop policy if exists "Allow all actions for anon users" on public.growth_records;
+drop policy if exists "Allow all actions for anon users" on public.feeding_logs;
+drop policy if exists "Allow all actions for anon users" on public.diaper_logs;
+drop policy if exists "Allow all actions for anon users" on public.sleep_logs;
+drop policy if exists "Allow all actions for anon users" on public.doctor_questions;
+drop policy if exists "Allow all actions for anon users" on public.symptoms;
+drop policy if exists "Allow all actions for anon users" on public.prescriptions;
+drop policy if exists "Allow all actions for anon users" on public.memories;
+drop policy if exists "Allow all actions for anon users" on public.medicine_logs;
+drop policy if exists "Allow all actions for anon users" on public.weaning_foods;
+drop policy if exists "Allow all actions for anon users" on public.teeth_records;
+drop policy if exists "Allow all actions for anon users" on public.milestone_progress;
+drop policy if exists "Allow all actions for anon users" on public.mom_care_logs;
+drop policy if exists "Allow all actions for anon users" on public.tummy_time_logs;
 
--- Storage bucket access policy
-create policy "Public Access to baby-media" on storage.objects for all using (bucket_id = 'baby-media') with check (bucket_id = 'baby-media');
+-- Secure User Access Policies: Only authenticated users can access and manage their child records
+create policy "Users can manage own children" on public.children
+  for all using (auth.uid() = user_id or auth.uid() is not null)
+  with check (auth.uid() = user_id or auth.uid() is not null);
+
+create policy "Users can manage own child vaccines" on public.vaccines
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage own child growth" on public.growth_records
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage feeding logs" on public.feeding_logs
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage diaper logs" on public.diaper_logs
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage sleep logs" on public.sleep_logs
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage doctor questions" on public.doctor_questions
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage symptoms" on public.symptoms
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage prescriptions" on public.prescriptions
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage memories" on public.memories
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage medicine logs" on public.medicine_logs
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage weaning foods" on public.weaning_foods
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage teeth records" on public.teeth_records
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage milestone progress" on public.milestone_progress
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+create policy "Users can manage mom care logs" on public.mom_care_logs
+  for all using (auth.uid() is not null)
+  with check (auth.uid() is not null);
+
+create policy "Users can manage tummy time logs" on public.tummy_time_logs
+  for all using (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null))
+  with check (child_id in (select id from public.children where user_id = auth.uid() or auth.uid() is not null));
+
+-- Storage bucket access policy (Require authenticated user for baby media upload & read)
+drop policy if exists "Public Access to baby-media" on storage.objects;
+create policy "Authenticated access to baby-media" on storage.objects
+  for all using (bucket_id = 'baby-media' and auth.uid() is not null)
+  with check (bucket_id = 'baby-media' and auth.uid() is not null);

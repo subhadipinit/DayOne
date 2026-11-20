@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { MemoryMilestone, ChildProfile } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
+import { uploadBabyMedia } from '@/lib/storageService';
 
 interface MemoryTimelineProps {
   profile: ChildProfile;
@@ -61,7 +62,8 @@ export const MemoryTimeline: React.FC<MemoryTimelineProps> = ({
           setMediaType('image');
         }
         const compressed = await compressImageFile(file, 1280, 0.85);
-        setMediaUrl(compressed);
+        const cloudUrl = await uploadBabyMedia(compressed, 'memories');
+        setMediaUrl(cloudUrl);
       } catch (err) {
         console.error('Failed to process memory media', err);
       } finally {

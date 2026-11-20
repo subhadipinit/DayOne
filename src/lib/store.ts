@@ -22,7 +22,7 @@ import {
   INITIAL_PRESCRIPTIONS,
   getInitialVaccines,
 } from './initialData';
-import { syncSingleRecord, deleteSingleRecord, pullAllFromSupabase } from './syncService';
+import { syncSingleRecord, deleteSingleRecord, pullAllFromSupabase, syncVaccinesBatch } from './syncService';
 import { getSupabaseClient } from './supabaseClient';
 
 const STORAGE_KEYS = {
@@ -46,6 +46,13 @@ export interface SupabaseConfig {
   url: string;
   anonKey: string;
   isSyncEnabled: boolean;
+}
+
+export function generateUniqueId(prefix: string): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export function useBabyStore() {
@@ -134,7 +141,59 @@ export function useBabyStore() {
         localStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(cloud.memories));
       }
 
-      console.log('[Supabase Sync] Hydrated cloud records successfully.');
+      // 11. Medicine History Logs
+      if (cloud.medicineLogs && cloud.medicineLogs.length > 0) {
+        localStorage.setItem(`dayone_med_history_${activeId}`, JSON.stringify(cloud.medicineLogs));
+      }
+
+      // 12. Solid Weaning Foods
+      if (cloud.weaningFoods && cloud.weaningFoods.length > 0) {
+        localStorage.setItem(`dayone_foods_${activeId}`, JSON.stringify(cloud.weaningFoods));
+      }
+
+      // 13. Baby Teeth Records
+      if (cloud.teethRecords && cloud.teethRecords.length > 0) {
+        const teethDict: Record<string, any> = {};
+        cloud.teethRecords.forEach((tr: any) => {
+          const key = tr.toothKey || tr.tooth_key || tr.id;
+          if (key) teethDict[key] = tr;
+        });
+        localStorage.setItem(`dayone_teeth_${activeId}`, JSON.stringify(teethDict));
+      }
+
+      // 14. Developmental Milestones Progress
+      if (cloud.milestones && cloud.milestones.length > 0) {
+        const msMap: Record<string, boolean> = {};
+        cloud.milestones.forEach((m: any) => {
+          const key = m.milestoneKey || m.milestone_key || m.id;
+          if (key) msMap[key] = Boolean(m.isAchieved ?? m.is_achieved);
+        });
+        localStorage.setItem(`dayone_milestones_${activeId}`, JSON.stringify(msMap));
+      }
+
+      // 15. Maternal Care Logs
+      if (cloud.momCareLogs && cloud.momCareLogs.length > 0) {
+        cloud.momCareLogs.forEach((m: any) => {
+          if (m.date) {
+            localStorage.setItem(`dayone_mom_log_${m.date}`, JSON.stringify(m));
+            if (m.waterGlasses !== undefined) {
+              localStorage.setItem(`dayone_mom_water_${m.date}`, m.waterGlasses.toString());
+            }
+          }
+        });
+      }
+
+      // 16. Tummy Time Logs
+      if (cloud.tummyTimeSessions && cloud.tummyTimeSessions.length > 0) {
+        localStorage.setItem(`dayone_tummy_sessions_${activeId}`, JSON.stringify(cloud.tummyTimeSessions));
+      }
+
+      // Notify mounted components to refresh their state from storage
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('dayone:data-hydrated', { detail: { childId: activeId } }));
+      }
+
+      console.log('[Supabase Sync] Hydrated cloud records across all 16 modules successfully.');
     } catch (e) {
       console.warn('[Supabase Sync] Could not hydrate from cloud:', e);
     }
@@ -181,6 +240,7 @@ export function useBabyStore() {
         const initialVax = getInitialVaccines(currentProf.dob, currentProf.id);
         setVaccinesState(initialVax);
         localStorage.setItem(STORAGE_KEYS.VACCINES, JSON.stringify(initialVax));
+        syncVaccinesBatch(initialVax);
       }
 
       // 3. Growth
@@ -189,7 +249,7 @@ export function useBabyStore() {
         setGrowthRecordsState(JSON.parse(savedGrowth));
       } else {
         const birthRecord: GrowthRecord = {
-          id: `growth_${Date.now()}`,
+          id: generateUniqueId('growth'),
           childId: currentProf.id,
           date: currentProf.dob.split('T')[0],
           ageInDays: 0,
@@ -308,6 +368,7 @@ export function useBabyStore() {
     const newVaccines = getInitialVaccines(child.dob, child.id);
     setVaccinesState(newVaccines);
     localStorage.setItem(STORAGE_KEYS.VACCINES, JSON.stringify(newVaccines));
+    syncVaccinesBatch(newVaccines);
 
     // Background Cloud Sync
     syncSingleRecord('children', {
@@ -366,7 +427,7 @@ export function useBabyStore() {
   const addGrowthRecord = (rec: Omit<GrowthRecord, 'id'>) => {
     const newRecord: GrowthRecord = {
       ...rec,
-      id: `growth_${Date.now()}`,
+      id: generateUniqueId('growth'),
     };
     setGrowthRecordsState((prev) => {
       const updated = [...prev, newRecord].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -398,7 +459,7 @@ export function useBabyStore() {
 
   // Feeding
   const addFeedingLog = (log: Omit<FeedingLog, 'id'>) => {
-    const newLog: FeedingLog = { ...log, id: `feed_${Date.now()}` };
+    const newLog: FeedingLog = { ...log, id: generateUniqueId('feed') };
     setFeedingLogsState((prev) => {
       const updated = [newLog, ...prev];
       localStorage.setItem(STORAGE_KEYS.FEEDING, JSON.stringify(updated));
@@ -429,7 +490,7 @@ export function useBabyStore() {
 
   // Diapers
   const addDiaperLog = (log: Omit<DiaperLog, 'id'>) => {
-    const newLog: DiaperLog = { ...log, id: `diaper_${Date.now()}` };
+    const newLog: DiaperLog = { ...log, id: generateUniqueId('diaper') };
     setDiaperLogsState((prev) => {
       const updated = [newLog, ...prev];
       localStorage.setItem(STORAGE_KEYS.DIAPER, JSON.stringify(updated));
@@ -459,7 +520,7 @@ export function useBabyStore() {
 
   // Sleep
   const addSleepLog = (log: Omit<SleepLog, 'id'>) => {
-    const newLog: SleepLog = { ...log, id: `sleep_${Date.now()}` };
+    const newLog: SleepLog = { ...log, id: generateUniqueId('sleep') };
     setSleepLogsState((prev) => {
       const updated = [newLog, ...prev];
       localStorage.setItem(STORAGE_KEYS.SLEEP, JSON.stringify(updated));
@@ -477,10 +538,19 @@ export function useBabyStore() {
     });
   };
 
+  const deleteSleepLog = (id: string) => {
+    setSleepLogsState((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      localStorage.setItem(STORAGE_KEYS.SLEEP, JSON.stringify(updated));
+      deleteSingleRecord('sleep_logs', id);
+      return updated;
+    });
+  };
+
   // Doctor Questions
   const addDoctorQuestion = (question: string) => {
     const newQ: DoctorQuestion = {
-      id: `dq_${Date.now()}`,
+      id: generateUniqueId('dq'),
       childId: profile.id,
       question,
       isAnswered: false,
@@ -537,7 +607,7 @@ export function useBabyStore() {
 
   // Symptoms
   const addSymptom = (sym: Omit<SymptomLog, 'id'>) => {
-    const newSym: SymptomLog = { ...sym, id: `sym_${Date.now()}` };
+    const newSym: SymptomLog = { ...sym, id: generateUniqueId('sym') };
     setSymptomsState((prev) => {
       const updated = [newSym, ...prev];
       localStorage.setItem(STORAGE_KEYS.SYMPTOMS, JSON.stringify(updated));
@@ -567,7 +637,7 @@ export function useBabyStore() {
 
   // Prescriptions
   const addPrescription = (rx: Omit<Prescription, 'id'>) => {
-    const newRx: Prescription = { ...rx, id: `rx_${Date.now()}` };
+    const newRx: Prescription = { ...rx, id: generateUniqueId('rx') };
     setPrescriptionsState((prev) => {
       const updated = [newRx, ...prev];
       localStorage.setItem(STORAGE_KEYS.PRESCRIPTIONS, JSON.stringify(updated));
@@ -599,7 +669,7 @@ export function useBabyStore() {
 
   // Memories
   const addMemory = (mem: Omit<MemoryMilestone, 'id'>) => {
-    const newMem: MemoryMilestone = { ...mem, id: `mem_${Date.now()}` };
+    const newMem: MemoryMilestone = { ...mem, id: generateUniqueId('mem') };
     setMemoriesState((prev) => {
       const updated = [newMem, ...prev];
       localStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(updated));
@@ -656,28 +726,30 @@ export function useBabyStore() {
   };
 
   // Toggle Theme
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setIsDarkMode((prev) => {
       const next = !prev;
-      if (next) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem(STORAGE_KEYS.THEME_MODE, 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem(STORAGE_KEYS.THEME_MODE, 'light');
+      if (typeof window !== 'undefined') {
+        if (next) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem(STORAGE_KEYS.THEME_MODE, 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem(STORAGE_KEYS.THEME_MODE, 'light');
+        }
       }
       return next;
     });
-  };
+  }, []);
 
   // Toggle Role (Parent vs Family)
-  const toggleUserRole = () => {
+  const toggleUserRole = useCallback(() => {
     setUserRole((prev) => {
       const next = prev === 'parent' ? 'family' : 'parent';
       localStorage.setItem(STORAGE_KEYS.USER_ROLE, next);
       return next;
     });
-  };
+  }, []);
 
   // Supabase Config
   const updateSupabaseConfig = (cfg: SupabaseConfig) => {
@@ -729,6 +801,7 @@ export function useBabyStore() {
     addDiaperLog,
     deleteDiaperLog,
     addSleepLog,
+    deleteSleepLog,
     addDoctorQuestion,
     toggleDoctorQuestion,
     deleteDoctorQuestion,

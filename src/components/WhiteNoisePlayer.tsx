@@ -16,6 +16,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Sliders,
+  AudioWaveform,
 } from 'lucide-react';
 
 export type SoundType = 'shusher' | 'pink' | 'brown' | 'white' | 'heartbeat' | 'rain';
@@ -175,7 +177,7 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
       const white = Math.random() * 2 - 1;
       data[i] = (lastOut + 0.02 * white) / 1.02;
       lastOut = data[i];
-      data[i] *= 3.5; // Gain compensation
+      data[i] *= 3.5;
     }
     return buffer;
   };
@@ -196,7 +198,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     stopAudio();
     const ctx = getAudioContext();
 
-    // Create or update Master Gain
     if (!masterGainRef.current) {
       masterGainRef.current = ctx.createGain();
       masterGainRef.current.connect(ctx.destination);
@@ -204,12 +205,10 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     masterGainRef.current.gain.setValueAtTime(isMuted ? 0 : volume, ctx.currentTime);
 
     if (sound === 'heartbeat') {
-      // Synthesize maternal heartbeat pulses (72 BPM = ~0.833s period)
       const playBeat = () => {
         if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
         const now = audioCtxRef.current.currentTime;
 
-        // Lub (First lower pulse at 65Hz)
         const osc1 = audioCtxRef.current.createOscillator();
         const gain1 = audioCtxRef.current.createGain();
         osc1.type = 'sine';
@@ -222,7 +221,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
         osc1.start(now);
         osc1.stop(now + 0.18);
 
-        // Dub (Second higher pulse at ~85Hz, 0.14s later)
         const osc2 = audioCtxRef.current.createOscillator();
         const gain2 = audioCtxRef.current.createGain();
         osc2.type = 'sine';
@@ -242,13 +240,11 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     }
 
     if (sound === 'shusher') {
-      // Pink noise filtered through rhythmic periodic envelope (1.3s shush + 1.2s pause = 2.5s cycle)
       const buffer = createPinkNoiseBuffer(ctx, 5);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.loop = true;
 
-      // Bandpass filter to isolate human vocal "shhh" frequency (1200Hz - 3500Hz)
       const filter = ctx.createBiquadFilter();
       filter.type = 'bandpass';
       filter.frequency.value = 2400;
@@ -257,17 +253,16 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
       const shushGain = ctx.createGain();
       shusherGainRef.current = shushGain;
 
-      // Modulate gain to mimic rhythmic human shushing
       const now = ctx.currentTime;
-      const cycleLength = 2.6; // seconds
-      const cyclesToSchedule = 60; // schedule ~2.5 mins ahead, refreshed
+      const cycleLength = 2.6;
+      const cyclesToSchedule = 60;
 
       for (let i = 0; i < cyclesToSchedule; i++) {
         const start = now + i * cycleLength;
         shushGain.gain.setValueAtTime(0.001, start);
-        shushGain.gain.linearRampToValueAtTime(0.85, start + 0.4); // gentle inhale & attack
-        shushGain.gain.exponentialRampToValueAtTime(0.001, start + 1.4); // fade out shush
-        shushGain.gain.setValueAtTime(0.001, start + cycleLength); // silent pause
+        shushGain.gain.linearRampToValueAtTime(0.85, start + 0.4);
+        shushGain.gain.exponentialRampToValueAtTime(0.001, start + 1.4);
+        shushGain.gain.setValueAtTime(0.001, start + cycleLength);
       }
 
       source.connect(filter);
@@ -278,7 +273,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
       return;
     }
 
-    // Standard looping noise buffers
     let buffer: AudioBuffer;
     let filter: BiquadFilterNode | null = null;
 
@@ -292,7 +286,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
       filter.type = 'lowpass';
       filter.frequency.value = 1400;
     } else {
-      // White noise
       buffer = createWhiteNoiseBuffer(ctx, 6);
     }
 
@@ -311,7 +304,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     sourceNodeRef.current = source;
   };
 
-  // Handle Play / Pause toggle
   const togglePlay = () => {
     if (isPlaying) {
       stopAudio();
@@ -327,7 +319,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     }
   };
 
-  // Switch sound on the fly
   const handleSelectSound = (sound: SoundType) => {
     setSelectedSound(sound);
     if (isPlaying) {
@@ -335,7 +326,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     }
   };
 
-  // Volume slider update
   const handleVolumeChange = (newVol: number) => {
     setVolume(newVol);
     if (masterGainRef.current && audioCtxRef.current) {
@@ -349,7 +339,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     }
   };
 
-  // Toggle mute
   const toggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
@@ -361,14 +350,12 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     }
   };
 
-  // Handle timer countdown & automatic fade out
   useEffect(() => {
     if (isPlaying && remainingSeconds !== null && remainingSeconds > 0) {
       timerIntervalRef.current = setInterval(() => {
         setRemainingSeconds((prev) => {
           if (prev === null) return null;
           if (prev <= 1) {
-            // Auto fade out
             stopAudio();
             setIsPlaying(false);
             return 0;
@@ -391,7 +378,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     };
   }, [isPlaying, remainingSeconds]);
 
-  // Clean up on component unmount
   useEffect(() => {
     return () => {
       stopAudio();
@@ -405,7 +391,6 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
     };
   }, []);
 
-  // Format seconds to mm:ss or hh:mm
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -417,21 +402,21 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
   const currentSoundMeta = SOUND_OPTIONS.find((s) => s.id === selectedSound)!;
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 right-3 sm:right-4 z-50 max-w-sm w-[calc(100vw-1.5rem)] sm:w-96 animate-reveal">
-      <div className="bg-[#FAF8F5] dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-3xl shadow-xl overflow-hidden backdrop-blur-xl">
+    <div className="fixed bottom-20 md:bottom-5 right-3 sm:right-5 z-50 max-w-sm w-[calc(100vw-1.5rem)] sm:w-[380px] animate-reveal">
+      <div className="bg-white/95 dark:bg-[#1C1A22]/95 border border-[#E8E4DC] dark:border-[#2D2B33] rounded-[28px] shadow-2xl overflow-hidden backdrop-blur-xl">
         
-        {/* Header Bar */}
-        <div className="px-4 py-3 bg-[#F2ECE3]/60 dark:bg-[#201E26]/60 border-b border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
+        {/* Floating Drawer Header Bar */}
+        <div className="px-4 py-3 bg-[#F7FAF5]/80 dark:bg-[#161C17]/80 border-b border-[#E8E4DC] dark:border-[#2D2B33] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-[#E1EDE4] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1] shadow-2xs`}>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] shadow-2xs`}>
               <Wind className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                   White Noise &amp; Shusher
                 </span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-[#E1EDE4] dark:bg-[#203D24] text-[#44634B] dark:text-[#ADCFB1]">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1]">
                   Offline
                 </span>
               </div>
@@ -445,49 +430,57 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="tap-feedback p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892]"
-              title={isMinimized ? 'Expand' : 'Minimize'}
+              title={isMinimized ? 'Expand Drawer' : 'Minimize to Pill'}
             >
               {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             <button
               onClick={onClose}
               className="tap-feedback p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892]"
-              title="Close"
+              title="Close Player"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Minimized Quick Control Bar */}
+        {/* Minimized Quick Control Floating Pill */}
         {isMinimized ? (
-          <div className="p-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xs font-semibold truncate text-[#201E1D] dark:text-[#FAF8F5]">
+          <div className="p-3 flex items-center justify-between gap-3 animate-reveal">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {isPlaying && (
+                <div className="flex items-end gap-0.5 h-4 shrink-0">
+                  <span className="w-1 bg-[#44634B] rounded-full animate-pulse h-3"></span>
+                  <span className="w-1 bg-[#44634B] rounded-full animate-pulse h-4"></span>
+                  <span className="w-1 bg-[#44634B] rounded-full animate-pulse h-2"></span>
+                </div>
+              )}
+              <span className="text-xs font-bold truncate text-[#191C1A] dark:text-[#FAF8F5]">
                 {currentSoundMeta.name}
               </span>
             </div>
+            
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={togglePlay}
-                className="tap-feedback w-8 h-8 rounded-full bg-[#E2765A] text-white flex items-center justify-center hover:bg-[#D26549] shadow-xs"
+                className="tap-feedback w-9 h-9 rounded-full bg-[#44634B] text-white flex items-center justify-center hover:bg-[#344738] shadow-xs"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
             </div>
           </div>
         ) : (
-          /* Expanded Full Controls */
-          <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto no-scrollbar">
+          /* Expanded Full Drawer Controls */
+          <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto no-scrollbar animate-reveal">
             
-            {/* Active Sound Card */}
-            <div className="relative p-3.5 rounded-2xl bg-white dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between overflow-hidden">
+            {/* Active Sound Card with Waveform Animation */}
+            <div className="relative p-3.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] flex items-center justify-between overflow-hidden">
               <div className="flex items-center gap-3 z-10">
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${currentSoundMeta.color} flex items-center justify-center text-white shadow-xs relative`}>
                   <currentSoundMeta.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-[#201E1D] dark:text-white">
+                  <h4 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                     {currentSoundMeta.name}
                   </h4>
                   <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
@@ -496,22 +489,22 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
                 </div>
               </div>
 
-              {/* Master Play/Pause Action Button */}
+              {/* Master Tactile Play/Pause Action Button */}
               <button
                 onClick={togglePlay}
-                className={`tap-feedback z-10 w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm ${
+                className={`tap-feedback z-10 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-sm transition-all ${
                   isPlaying
-                    ? 'bg-[#E2765A] hover:bg-[#D26549]'
-                    : 'bg-[#201E1D] dark:bg-white dark:text-[#201E1D]'
+                    ? 'bg-[#D97757] hover:bg-[#c36445]'
+                    : 'bg-[#44634B] hover:bg-[#344738]'
                 }`}
               >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
               </button>
             </div>
 
             {/* Sound Selector Grid */}
             <div>
-              <div className="text-[11px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider mb-2">
+              <div className="text-[11px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider mb-2">
                 Soothing Sound Options
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -522,17 +515,17 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
                     <button
                       key={opt.id}
                       onClick={() => handleSelectSound(opt.id)}
-                      className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
+                      className={`tap-feedback p-2.5 rounded-2xl border text-left transition-all flex items-start gap-2.5 ${
                         isSelected
-                          ? 'border-[#E2765A] bg-[#E2765A]/5 dark:bg-[#E2765A]/10 text-[#201E1D] dark:text-white'
-                          : 'border-[#EAE6DF] dark:border-[#2D2B33] hover:bg-black/5 dark:hover:bg-white/5 text-[#75706B] dark:text-[#9E9892]'
+                          ? 'border-[#44634B] bg-[#C8EBCC]/30 dark:bg-[#203D24]/30 text-[#191C1A] dark:text-white shadow-xs ring-1 ring-[#44634B]/20'
+                          : 'border-[#E8E4DC] dark:border-[#2D382F] hover:bg-black/5 dark:hover:bg-white/5 text-[#75706B] dark:text-[#9E9892]'
                       }`}
                     >
-                      <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-[#E2765A] text-white' : 'bg-black/5 dark:bg-white/10'}`}>
+                      <div className={`p-1.5 rounded-xl shrink-0 ${isSelected ? 'bg-[#44634B] text-white' : 'bg-black/5 dark:bg-white/10'}`}>
                         <Icon className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold truncate leading-tight">
+                        <div className="text-xs font-bold truncate leading-tight">
                           {opt.name}
                         </div>
                         <div className="text-[10px] text-[#75706B] dark:text-[#9E9892] truncate mt-0.5">
@@ -546,14 +539,14 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
             </div>
 
             {/* Volume & Sleep Timer Controls */}
-            <div className="space-y-3 pt-1 border-t border-[#EAE6DF] dark:border-[#2D2B33]">
+            <div className="space-y-3 pt-1 border-t border-[#E8E4DC] dark:border-[#2D382F]">
               
-              {/* Volume Slider */}
+              {/* Volume Slider with Mute Toggle */}
               <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[#75706B] dark:text-[#9E9892] mb-1.5">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#75706B] dark:text-[#9E9892] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <button onClick={toggleMute} className="hover:text-[#201E1D] dark:hover:text-white">
-                      {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-rose-500" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    <button onClick={toggleMute} className="tap-feedback hover:text-[#191C1A] dark:hover:text-white">
+                      {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4" />}
                     </button>
                     <span>Volume</span>
                   </span>
@@ -566,24 +559,25 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
                   step="0.05"
                   value={isMuted ? 0 : volume}
                   onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-lg appearance-none cursor-pointer accent-[#E2765A]"
+                  className="w-full h-2 bg-[#E0E3DF] dark:bg-[#2D382F] rounded-lg appearance-none cursor-pointer accent-[#44634B]"
                 />
               </div>
 
               {/* Sleep Auto-Fade Timer */}
               <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[#75706B] dark:text-[#9E9892] mb-1.5">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#75706B] dark:text-[#9E9892] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className="w-3.5 h-3.5 text-[#44634B]" />
                     <span>Auto-Sleep Timer</span>
                   </span>
                   {remainingSeconds !== null && isPlaying && (
-                    <span className="text-[#E2765A] font-semibold">
+                    <span className="text-[#44634B] dark:text-[#ADCFB1] font-bold">
                       {formatTime(remainingSeconds)} left
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-5 gap-1">
+                
+                <div className="grid grid-cols-5 gap-1.5">
                   {TIMER_OPTIONS.map((t) => {
                     const isSelected = selectedTimerMinutes === t.minutes;
                     return (
@@ -597,10 +591,10 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
                             setRemainingSeconds(null);
                           }
                         }}
-                        className={`py-1 rounded-lg text-[10px] font-semibold transition-all ${
+                        className={`tap-feedback py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
                           isSelected
-                            ? 'bg-[#E2765A] text-white shadow-xs'
-                            : 'bg-white dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
+                            ? 'bg-[#44634B] text-white border-[#344738] shadow-xs'
+                            : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F] text-[#75706B] dark:text-[#9E9892]'
                         }`}
                       >
                         {t.label}
@@ -613,10 +607,10 @@ export const WhiteNoisePlayer: React.FC<WhiteNoisePlayerProps> = ({
             </div>
 
             {/* Helpful Calming Tip */}
-            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
               <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
               <span>
-                <strong>Pediatric Sleep Tip:</strong> Keep phone at least 4–6 feet from baby's crib at moderate volume to protect delicate hearing while calming the Moro startle reflex.
+                <strong>Pediatric Sleep Tip:</strong> Keep phone at least 4–6 feet from baby's crib at moderate volume (&lt;60 dB) to protect delicate hearing while calming the Moro startle reflex.
               </span>
             </div>
 

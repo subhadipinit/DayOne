@@ -319,12 +319,19 @@ export async function pushAllToSupabase(payload: SyncPayload): Promise<{
     }
 
     // 13. Teeth Records
-    if (payload.teethRecords && payload.teethRecords.length > 0) {
-      const toothRows = payload.teethRecords.map((tr) => ({
+    const rawTeeth = payload.teethRecords;
+    const teethList: any[] = Array.isArray(rawTeeth)
+      ? rawTeeth
+      : rawTeeth && typeof rawTeeth === 'object'
+      ? Object.values(rawTeeth)
+      : [];
+
+    if (teethList.length > 0) {
+      const toothRows = teethList.map((tr) => ({
         id: tr.id,
         child_id: tr.childId || childId,
-        tooth_key: tr.toothKey || null,
-        name: tr.name,
+        tooth_key: tr.toothKey || tr.toothId || null,
+        name: tr.name || tr.toothName || 'Baby Tooth',
         arch: tr.arch || tr.jaw || null,
         jaw: tr.jaw || tr.arch || null,
         side: tr.side || null,
@@ -342,14 +349,32 @@ export async function pushAllToSupabase(payload: SyncPayload): Promise<{
     }
 
     // 14. Developmental Milestones
-    if (payload.milestones && payload.milestones.length > 0) {
-      const msRows = payload.milestones.map((ms) => ({
-        id: ms.id,
+    const rawMilestones = payload.milestones;
+    const msList: any[] = Array.isArray(rawMilestones)
+      ? rawMilestones
+      : rawMilestones && typeof rawMilestones === 'object'
+      ? Object.entries(rawMilestones).map(([k, v]: [string, any]) => {
+          if (typeof v === 'boolean') {
+            return {
+              id: `${childId}_${k}`,
+              childId,
+              milestoneKey: k,
+              isAchieved: v,
+              achievedDate: v ? new Date().toISOString().split('T')[0] : null,
+            };
+          }
+          return v;
+        })
+      : [];
+
+    if (msList.length > 0) {
+      const msRows = msList.map((ms) => ({
+        id: ms.id || `${childId}_${ms.milestoneKey}`,
         child_id: ms.childId || childId,
         milestone_key: ms.milestoneKey || null,
-        age_month: ms.ageMonth,
-        category: ms.category,
-        title: ms.title,
+        age_month: ms.ageMonth || 2,
+        category: ms.category || 'motor',
+        title: ms.title || ms.milestoneKey || 'Milestone',
         description: ms.description || null,
         is_achieved: ms.isAchieved ?? false,
         achieved_date: ms.achievedDate || null,
@@ -408,6 +433,38 @@ export async function pushAllToSupabase(payload: SyncPayload): Promise<{
       syncedTables,
       skippedTables,
     };
+  }
+}
+
+export async function syncVaccinesBatch(vaccines: VaccineRecord[]): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client || !vaccines || vaccines.length === 0) return;
+
+  try {
+    const vaxRows = vaccines.map((v) => ({
+      id: v.id,
+      child_id: v.childId,
+      name: v.name,
+      code: v.code,
+      target_diseases: v.targetDiseases || null,
+      category: v.category,
+      age_due_weeks: v.ageDueWeeks,
+      age_due_display: v.ageDueDisplay,
+      due_date: v.dueDate,
+      status: v.status,
+      date_administered: v.dateAdministered || null,
+      is_painless: v.isPainless ?? null,
+      brand_name: v.brandName || null,
+      batch_number: v.batchNumber || null,
+      cost_inr: v.costInr || 0,
+      clinic_name: v.clinicName || null,
+      doctor_name: v.doctorName || null,
+      receipt_url: v.receiptUrl || null,
+      notes: v.notes || null,
+    }));
+    await safeUpsert(client, 'vaccines', vaxRows);
+  } catch (err) {
+    // Non-blocking
   }
 }
 

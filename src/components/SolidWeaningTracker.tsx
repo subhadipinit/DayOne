@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Utensils,
   Plus,
@@ -29,9 +29,11 @@ import {
   AlertCircle,
   HelpCircle,
   ExternalLink,
+  RotateCcw,
 } from 'lucide-react';
 import { SolidFoodItem, ChildProfile, WeaningRecipe } from '@/lib/types';
 import { syncSingleRecord } from '@/lib/syncService';
+import { generateUniqueId } from '@/lib/store';
 import {
   AGE_WISE_WEANING_STAGES,
   COMPREHENSIVE_WEANING_RECIPES,
@@ -45,7 +47,7 @@ interface SolidWeaningTrackerProps {
   userRole?: 'parent' | 'family';
 }
 
-type WeaningTab = 'chart' | 'recipes' | 'diary' | 'safety';
+type WeaningTab = 'diary' | 'chart' | 'recipes' | 'safety';
 
 export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
   profile,
@@ -95,8 +97,30 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
   const [diaryCategory, setDiaryCategory] = useState<string>('all');
   const [diarySearch, setDiarySearch] = useState<string>('');
+  const [onlyIronFoods, setOnlyIronFoods] = useState<boolean>(false);
   const [selectedFoodForReaction, setSelectedFoodForReaction] = useState<SolidFoodItem | null>(null);
   const [showAddCustomModal, setShowAddCustomModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadSaved = () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(`dayone_foods_${profile.id}`);
+        if (saved) {
+          try {
+            const parsed: SolidFoodItem[] = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setFoods(parsed);
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    };
+    loadSaved();
+    window.addEventListener('dayone:data-hydrated', loadSaved);
+    return () => window.removeEventListener('dayone:data-hydrated', loadSaved);
+  }, [profile.id]);
 
   // Custom Food Form
   const [customName, setCustomName] = useState<string>('');
@@ -104,7 +128,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
   // Stats for 100 Foods Challenge
   const introducedFoods = foods.filter((f) => (f.timesOffered || 0) > 0 || !!f.isIntroduced);
-  const lovedCount = foods.filter((f) => f.reaction === 'loved').length;
+  const lovedCount = foods.filter((f) => f.reaction === 'loved' && ((f.timesOffered || 0) > 0 || f.isIntroduced)).length;
   const toleratedCount = foods.filter((f) => f.reaction === 'neutral' && ((f.timesOffered || 0) > 0 || f.isIntroduced)).length;
   const dislikedCount = foods.filter((f) => f.reaction === 'disliked').length;
   const allergicCount = foods.filter((f) => f.reaction === 'allergic').length;
@@ -112,11 +136,98 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
   // Determine badge level
   const getBadgeLevel = (count: number) => {
-    if (count >= 100) return { label: '👑 Master Weaner (100 Foods Champion)', color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-300' };
-    if (count >= 75) return { label: '🥇 Gold Taster (75+ Foods)', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-300' };
-    if (count >= 50) return { label: '🥈 Silver Foodie (50+ Foods)', color: 'text-slate-600 bg-slate-50 dark:bg-slate-900/40 border-slate-300' };
-    if (count >= 25) return { label: '🥉 Bronze Explorer (25+ Foods)', color: 'text-amber-700 bg-amber-50/70 dark:bg-amber-950/30 border-amber-400' };
-    return { label: '🌱 New Food Explorer', color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300' };
+    if (count >= 100) return { label: '👑 Master Weaner (100 Foods Champion)', color: 'text-amber-700 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300' };
+    if (count >= 75) return { label: '🥇 Gold Taster (75+ Foods)', color: 'text-yellow-700 bg-yellow-100 dark:bg-yellow-950/60 dark:text-yellow-300 border-yellow-300' };
+    if (count >= 50) return { label: '🥈 Silver Foodie (50+ Foods)', color: 'text-slate-700 bg-slate-100 dark:bg-slate-900/60 dark:text-slate-300 border-slate-300' };
+    if (count >= 25) return { label: '🥉 Bronze Explorer (25+ Foods)', color: 'text-amber-800 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 border-amber-400' };
+    return { label: '🌱 New Food Explorer', color: 'text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300' };
+  };
+
+  // 1-Tap State Cycling: Untried -> Tried -> Liked -> Disliked -> Allergy -> Untried
+  const handleCycleFoodState = (foodId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    let nextReaction: SolidFoodItem['reaction'] = 'neutral';
+    let nextTimesOffered = 1;
+    let nextIsIntroduced = true;
+    let shouldFireConfetti = false;
+
+    const updated = foods.map((f) => {
+      if (f.id === foodId) {
+        const isCurrentlyIntroduced = (f.timesOffered || 0) > 0 || !!f.isIntroduced;
+
+        if (!isCurrentlyIntroduced) {
+          // Untried -> Tried (Tolerated)
+          nextReaction = 'neutral';
+          nextTimesOffered = 1;
+          nextIsIntroduced = true;
+        } else if (f.reaction === 'neutral') {
+          // Tried -> Liked (Loved)
+          nextReaction = 'loved';
+          nextTimesOffered = Math.max(1, f.timesOffered || 1);
+          nextIsIntroduced = true;
+          shouldFireConfetti = true;
+        } else if (f.reaction === 'loved') {
+          // Liked -> Disliked
+          nextReaction = 'disliked';
+          nextTimesOffered = Math.max(1, f.timesOffered || 1);
+          nextIsIntroduced = true;
+        } else if (f.reaction === 'disliked') {
+          // Disliked -> Allergy
+          nextReaction = 'allergic';
+          nextTimesOffered = Math.max(1, f.timesOffered || 1);
+          nextIsIntroduced = true;
+        } else {
+          // Allergy -> Untried (reset)
+          nextReaction = 'neutral';
+          nextTimesOffered = 0;
+          nextIsIntroduced = false;
+        }
+
+        return {
+          ...f,
+          reaction: nextReaction,
+          isIntroduced: nextIsIntroduced,
+          timesOffered: nextTimesOffered,
+          firstOfferedDate: nextIsIntroduced ? (f.firstOfferedDate || today) : '',
+        };
+      }
+      return f;
+    });
+
+    setFoods(updated);
+    localStorage.setItem(`dayone_foods_${profile.id}`, JSON.stringify(updated));
+
+    const changed = updated.find((f) => f.id === foodId);
+    if (changed) {
+      syncSingleRecord('weaning_foods', {
+        id: changed.id,
+        child_id: profile.id,
+        name: changed.name,
+        category: changed.category,
+        is_introduced: changed.isIntroduced ?? false,
+        first_offered_date: changed.firstOfferedDate || null,
+        reaction: changed.reaction || null,
+        allergies_observed: changed.allergiesObserved || [],
+        times_offered: changed.timesOffered || 0,
+        notes: changed.notes || null,
+        age_stage_months: changed.ageStageMonths || null,
+        is_iron_rich: changed.isIronRich ?? false,
+        is_allergen: changed.isAllergen ?? false,
+      });
+    }
+
+    if (shouldFireConfetti) {
+      try {
+        confetti({
+          particleCount: 40,
+          spread: 55,
+          origin: { y: 0.7 },
+          colors: ['#44634B', '#C8EBCC', '#D97757'],
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
   };
 
   const handleUpdateFoodReaction = (
@@ -181,7 +292,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
     if (!customName.trim()) return;
 
     const newFood: SolidFoodItem = {
-      id: `custom_${Date.now()}`,
+      id: generateUniqueId('custom'),
       childId: profile.id,
       name: customName.trim(),
       category: customCategory,
@@ -196,31 +307,50 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
     localStorage.setItem(`dayone_foods_${profile.id}`, JSON.stringify(updated));
     setCustomName('');
     setShowAddCustomModal(false);
+
+    syncSingleRecord('weaning_foods', {
+      id: newFood.id,
+      child_id: profile.id,
+      name: newFood.name,
+      category: newFood.category,
+      is_introduced: false,
+      first_offered_date: null,
+      reaction: 'neutral',
+      allergies_observed: [],
+      times_offered: 0,
+      notes: null,
+      age_stage_months: null,
+      is_iron_rich: false,
+      is_allergen: false,
+    });
   };
 
   // 1-Click Link Recipe to Food Diary
   const handleMarkRecipeCooked = (recipe: WeaningRecipe) => {
     const today = new Date().toISOString().split('T')[0];
     let matched = false;
+    let syncedFoodItem: SolidFoodItem | null = null;
 
     const updated = foods.map((f) => {
       if (f.id === recipe.linkedFoodId || f.name.toLowerCase().includes(recipe.title.toLowerCase().slice(0, 10))) {
         matched = true;
         const currentTimes = f.timesOffered || 0;
-        return {
+        const item: SolidFoodItem = {
           ...f,
           isIntroduced: true,
           timesOffered: currentTimes + 1,
           firstOfferedDate: f.firstOfferedDate || today,
           reaction: f.reaction || 'loved',
         };
+        syncedFoodItem = item;
+        return item;
       }
       return f;
     });
 
     if (!matched) {
       const newFood: SolidFoodItem = {
-        id: `rec_food_${Date.now()}`,
+        id: generateUniqueId('rec_food'),
         childId: profile.id,
         name: recipe.title,
         category: recipe.category === 'porridge' || recipe.category === 'khichdi' ? 'grain' : 'vegetable',
@@ -230,12 +360,32 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
         reaction: 'loved',
         isIronRich: recipe.isIronRich,
       };
+      syncedFoodItem = newFood;
       updated.unshift(newFood);
     }
 
     setFoods(updated);
     localStorage.setItem(`dayone_foods_${profile.id}`, JSON.stringify(updated));
     setActiveRecipeModal(null);
+
+    if (syncedFoodItem) {
+      const s = syncedFoodItem as SolidFoodItem;
+      syncSingleRecord('weaning_foods', {
+        id: s.id,
+        child_id: profile.id,
+        name: s.name,
+        category: s.category,
+        is_introduced: true,
+        first_offered_date: s.firstOfferedDate || today,
+        reaction: s.reaction || 'loved',
+        allergies_observed: s.allergiesObserved || [],
+        times_offered: s.timesOffered || 1,
+        notes: s.notes || null,
+        age_stage_months: s.ageStageMonths || null,
+        is_iron_rich: s.isIronRich ?? false,
+        is_allergen: s.isAllergen ?? false,
+      });
+    }
 
     try {
       confetti({
@@ -265,47 +415,48 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
   const filteredFoods = foods.filter((f) => {
     const matchesCat = diaryCategory === 'all' || f.category === diaryCategory;
     const matchesSearch = f.name.toLowerCase().includes(diarySearch.toLowerCase());
-    return matchesCat && matchesSearch;
+    const matchesIron = !onlyIronFoods || f.isIronRich;
+    return matchesCat && matchesSearch && matchesIron;
   });
 
   const badge = getBadgeLevel(introducedFoods.length);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-6 animate-reveal">
       
       {/* Screen Title & Action Bar */}
       <div className="flex items-start justify-between gap-3 pt-1">
         <div className="flex flex-col min-w-0">
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
             100 Foods Challenge
           </h1>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+          <p className="text-xs text-[#424842] dark:text-[#9E9892] mt-0.5">
             Baby Led Weaning • {profile.name} ({profile.dob ? `${Math.floor((Date.now() - new Date(profile.dob).getTime()) / (1000 * 60 * 60 * 24 * 30.4375))}m` : '6m+'})
           </p>
         </div>
         {userRole === 'parent' && (
           <button
             onClick={() => setShowAddCustomModal(true)}
-            className="shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-primary text-on-primary shadow-xs active:scale-95 transition-all font-semibold"
+            className="tap-feedback shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-[#44634B] hover:bg-[#344738] text-white shadow-xs font-semibold text-xs"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span className="font-label-lg text-label-lg">Try Food</span>
+            <Plus className="w-4 h-4" />
+            <span>Add Food</span>
           </button>
         )}
       </div>
 
-      {/* Challenge Progress Hero Card (Direct from Stitch Mockup) */}
-      <div className="relative w-full rounded-3xl bg-surface-container-lowest p-5 shadow-[0_4px_20px_-2px_rgba(45,49,46,0.05)] border border-outline-variant/30 overflow-hidden">
+      {/* Challenge Progress Hero Card */}
+      <div className="relative w-full rounded-3xl bg-white dark:bg-[#1E2520] p-5 shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] overflow-hidden">
         {/* Ambient organic blush pattern */}
-        <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-primary-fixed/25 blur-2xl pointer-events-none"></div>
-        <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-secondary-fixed/35 blur-2xl pointer-events-none"></div>
+        <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-[#44634B]/10 blur-2xl pointer-events-none"></div>
+        <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-[#D97757]/10 blur-2xl pointer-events-none"></div>
 
         <div className="relative flex items-center justify-between gap-4">
           {/* Radial Gauge with Badge inside */}
           <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
             <svg aria-hidden="true" className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" fill="transparent" r="40" stroke="#f1f4f0" strokeWidth="8"></circle>
+              <circle cx="50" cy="50" fill="transparent" r="40" stroke="#f1f4f0" strokeWidth="8" className="dark:stroke-[#263129]"></circle>
               <circle
                 cx="50"
                 cy="50"
@@ -320,75 +471,58 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               ></circle>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="font-headline-md text-headline-md font-bold text-on-surface leading-none">
+              <span className="text-2xl font-black text-[#191C1A] dark:text-[#FAF8F5] leading-none tabular-nums">
                 {introducedFoods.length}
               </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">/ 100</span>
+              <span className="text-[10px] text-[#424842] dark:text-[#9E9892] font-semibold">/ 100</span>
             </div>
           </div>
 
           {/* Text details & milestone */}
           <div className="flex-1 min-w-0">
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant mb-1.5 shadow-xs">
-              <span className="material-symbols-outlined text-[15px]">eco</span>
-              <span className="font-label-sm text-label-sm font-semibold">{badge.label}</span>
+            <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold mb-1.5 border ${badge.color}`}>
+              <Leaf className="w-3.5 h-3.5" />
+              <span>{badge.label}</span>
             </div>
-            <p className="font-headline-md text-headline-md text-on-surface font-bold leading-tight">
+            <p className="text-base sm:text-lg text-[#191C1A] dark:text-[#FAF8F5] font-bold leading-tight">
               {introducedFoods.length} Foods Explored
             </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {100 - introducedFoods.length} fresh bites left to reach baby&apos;s 1st birthday milestone!
+            <p className="text-xs text-[#424842] dark:text-[#9E9892] mt-0.5">
+              {Math.max(0, 100 - introducedFoods.length)} fresh bites left to reach baby&apos;s 1st birthday milestone!
             </p>
           </div>
         </div>
 
         {/* Stat Pills Row */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-surface-variant/40">
-          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
-            <div className="flex items-center gap-1 text-primary">
-              <span className="material-symbols-outlined text-[16px]">verified_user</span>
-              <span className="font-label-lg text-label-lg font-bold">6</span>
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#E8E4DC] dark:border-[#2D382F]">
+          <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] text-center border border-[#E0E3DF] dark:border-[#2D382F]">
+            <div className="flex items-center gap-1 text-[#44634B] dark:text-[#ADCFB1]">
+              <Heart className="w-3.5 h-3.5 fill-current" />
+              <span className="font-bold text-sm tabular-nums">{lovedCount}</span>
             </div>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Allergens Ok</span>
+            <span className="text-[10px] font-semibold text-[#424842] dark:text-[#9E9892] mt-0.5">Loved</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
-            <div className="flex items-center gap-1 text-secondary">
-              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                favorite
-              </span>
-              <span className="font-label-lg text-label-lg font-bold">{lovedCount}</span>
+          <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] text-center border border-[#E0E3DF] dark:border-[#2D382F]">
+            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+              <Smile className="w-3.5 h-3.5" />
+              <span className="font-bold text-sm tabular-nums">{toleratedCount}</span>
             </div>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Loved</span>
+            <span className="text-[10px] font-semibold text-[#424842] dark:text-[#9E9892] mt-0.5">Tolerated</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
-            <div className="flex items-center gap-1 text-tertiary">
-              <span className="material-symbols-outlined text-[16px]">replay</span>
-              <span className="font-label-lg text-label-lg font-bold">{toleratedCount + dislikedCount}</span>
+          <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] text-center border border-[#E0E3DF] dark:border-[#2D382F]">
+            <div className="flex items-center gap-1 text-[#D97757]">
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="font-bold text-sm tabular-nums">{dislikedCount + allergicCount}</span>
             </div>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Retrials</span>
+            <span className="text-[10px] font-semibold text-[#424842] dark:text-[#9E9892] mt-0.5">Retrials</span>
           </div>
         </div>
       </div>
 
-      {/* Safety Quick Tip Card (Direct from Stitch Mockup) */}
-      <div className="rounded-2xl bg-tertiary-fixed/30 p-4 border border-tertiary-fixed/40 flex items-start gap-3 shadow-xs">
-        <div className="w-9 h-9 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-[20px]">health_and_safety</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-label-lg text-label-lg font-bold text-on-surface">
-            Pediatric Safety Note: Gagging vs Choking
-          </h4>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-relaxed text-xs">
-            Gagging is a normal, noisy throat reflex as baby learns tongue control. Choking is silent. Always serve soft, finger-length spears and seat baby upright.
-          </p>
-        </div>
-      </div>
-
-      {/* Segmented Navigation Sub-Tabs (Direct from Stitch Mockup) */}
-      <div className="w-full p-1 rounded-full bg-surface-container flex items-center gap-1 overflow-x-auto no-scrollbar">
+      {/* Segmented Navigation Sub-Tabs */}
+      <div className="w-full p-1 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] flex items-center gap-1 overflow-x-auto no-scrollbar border border-[#E0E3DF] dark:border-[#2D382F]">
         {[
           { id: 'diary' as WeaningTab, label: '100 Foods Grid' },
           { id: 'chart' as WeaningTab, label: 'Age-Wise Stages' },
@@ -398,10 +532,10 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 min-w-[95px] py-2 px-3 rounded-full font-label-md text-label-md text-center transition-all font-semibold ${
+            className={`tap-feedback flex-1 min-w-[95px] py-2 px-3 rounded-full text-xs text-center transition-all font-semibold ${
               activeTab === tab.id
-                ? 'bg-surface-container-lowest text-on-surface shadow-xs font-bold'
-                : 'text-on-surface-variant hover:text-on-surface'
+                ? 'bg-white dark:bg-[#202822] text-[#191C1A] dark:text-[#FAF8F5] shadow-xs font-bold'
+                : 'text-[#424842] dark:text-[#9E9892] hover:text-[#191C1A]'
             }`}
             type="button"
           >
@@ -411,7 +545,192 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: AGE-WISE FOOD CHART & FEEDING STAGES */}
+      {/* TAB 1: 100 FOODS CHALLENGE & REACTION DIARY */}
+      {/* ========================================================================= */}
+      {activeTab === 'diary' && (
+        <div className="space-y-5">
+          
+          {/* Quick Tip for 1-Tap Cycling */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] text-xs text-[#424842] dark:text-[#9E9892]">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1] shrink-0" />
+              <span>
+                <strong>1-Tap Cycling:</strong> Tap any food badge to cycle state (Untried ➔ Tried ➔ Liked ➔ Disliked ➔ Allergy).
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-[#44634B] dark:text-[#ADCFB1] shrink-0">Fast BLW</span>
+          </div>
+
+          {/* Category Filter Pills Bar */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+              {[
+                { id: 'all', label: 'All Foods', count: foods.length },
+                { id: 'grain', label: '🌾 Grains & Millets', count: foods.filter(f => f.category === 'grain').length },
+                { id: 'vegetable', label: '🥕 Vegetables', count: foods.filter(f => f.category === 'vegetable').length },
+                { id: 'fruit', label: '🍎 Fruits', count: foods.filter(f => f.category === 'fruit').length },
+                { id: 'protein', label: '🥚 Protein & Dal', count: foods.filter(f => f.category === 'protein').length },
+                { id: 'dairy', label: '🧈 Dairy & Fats', count: foods.filter(f => f.category === 'dairy').length },
+                { id: 'spice', label: '🌿 Mild Aromatics', count: foods.filter(f => f.category === 'spice').length },
+              ].map((cat) => {
+                const isSelected = diaryCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setDiaryCategory(cat.id)}
+                    className={`tap-feedback px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
+                      isSelected
+                        ? 'bg-[#44634B] text-white border-[#344738] shadow-xs'
+                        : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F] text-[#424842] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className={`ml-1 text-[10px] ${isSelected ? 'text-white/80' : 'text-[#75706B]'}`}>
+                      ({cat.count})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search & Iron Toggle Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#75706B]" />
+                <input
+                  type="text"
+                  placeholder="Search foods (e.g. Ragi, Apple, Curd)..."
+                  value={diarySearch}
+                  onChange={(e) => setDiarySearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 rounded-xl text-xs bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-[#44634B]"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setOnlyIronFoods(!onlyIronFoods)}
+                className={`tap-feedback px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 shrink-0 ${
+                  onlyIronFoods
+                    ? 'bg-[#D97757] text-white border-[#D97757] shadow-xs'
+                    : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F] text-[#424842] dark:text-[#9E9892]'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>Iron Rich Only</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Foods Grid with 1-Tap State Cycling */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {filteredFoods.map((food) => {
+              const isIntroduced = (food.timesOffered || 0) > 0 || !!food.isIntroduced;
+              const foodEmoji =
+                food.category === 'fruit'
+                  ? '🍎'
+                  : food.category === 'vegetable'
+                  ? '🥦'
+                  : food.category === 'grain'
+                  ? '🌾'
+                  : food.category === 'dairy'
+                  ? '🥣'
+                  : food.isAllergen
+                  ? '🥜'
+                  : '🥑';
+
+              return (
+                <div
+                  key={food.id}
+                  className={`flex flex-col justify-between rounded-3xl p-3.5 border transition-all ${
+                    isIntroduced
+                      ? food.reaction === 'loved'
+                        ? 'bg-white dark:bg-[#1E2520] border-[#44634B]/40 ring-1 ring-[#44634B]/20 shadow-xs'
+                        : food.reaction === 'allergic'
+                        ? 'bg-white dark:bg-[#1E2520] border-rose-400/40'
+                        : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F]'
+                      : 'bg-[#F7FAF5]/80 dark:bg-[#161C17]/80 border-dashed border-[#D0D6CF] dark:border-[#2D382F]'
+                  }`}
+                >
+                  <div>
+                    {/* Top Row: Emoji & 1-Tap Cycling Badge */}
+                    <div className="flex items-start justify-between gap-1 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-[#F1F4F0] dark:bg-[#202822] flex items-center justify-center text-lg shrink-0">
+                        {foodEmoji}
+                      </div>
+
+                      {/* Tap this pill directly to cycle states! */}
+                      <button
+                        type="button"
+                        onClick={() => handleCycleFoodState(food.id)}
+                        title="Tap to cycle state (Untried ➔ Tried ➔ Liked ➔ Disliked ➔ Allergy)"
+                        className={`tap-feedback inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-transform cursor-pointer ${
+                          !isIntroduced
+                            ? 'bg-[#F1F4F0] dark:bg-[#202822] text-[#75706B] dark:text-[#9E9892] border-[#E0E3DF] dark:border-[#2D382F]'
+                            : food.reaction === 'loved'
+                            ? 'bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] border-[#44634B]/30'
+                            : food.reaction === 'neutral'
+                            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border-blue-200'
+                            : food.reaction === 'disliked'
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-200'
+                            : 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border-rose-200'
+                        }`}
+                      >
+                        {!isIntroduced && '⚪ Untried'}
+                        {isIntroduced && food.reaction === 'loved' && '💚 Loved'}
+                        {isIntroduced && food.reaction === 'neutral' && '🙂 Tried'}
+                        {isIntroduced && food.reaction === 'disliked' && '😋 Disliked'}
+                        {isIntroduced && food.reaction === 'allergic' && '⚠️ Allergy'}
+                      </button>
+                    </div>
+
+                    <h4 className="text-xs sm:text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5] truncate">
+                      {food.name}
+                    </h4>
+                    <p className="text-[11px] text-[#424842] dark:text-[#9E9892] truncate mt-0.5">
+                      {food.category} {food.isIronRich ? '• Iron rich' : ''} {food.isAllergen ? '• Allergen' : ''}
+                    </p>
+                  </div>
+
+                  {/* Bottom Control Bar */}
+                  <div className="mt-3 pt-2 border-t border-[#E8E4DC] dark:border-[#2D382F] flex items-center justify-between text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleCycleFoodState(food.id)}
+                      className="tap-feedback inline-flex items-center gap-1 font-semibold text-[#44634B] dark:text-[#ADCFB1] text-[11px]"
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>{isIntroduced ? `Tried ${food.timesOffered || 1}x` : 'Tap to Try'}</span>
+                    </button>
+
+                    {/* Dedicated Details / Symptoms Modal Button */}
+                    {userRole === 'parent' && (
+                      <button
+                        onClick={() => setSelectedFoodForReaction(food)}
+                        className="tap-feedback p-1 rounded-lg text-stone-400 hover:text-[#44634B] transition-colors"
+                        type="button"
+                        title="Log specific symptoms or notes"
+                        aria-label={`Detailed log for ${food.name}`}
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredFoods.length === 0 && (
+            <div className="p-8 text-center text-xs text-[#75706B] dark:text-[#9E9892] bg-white dark:bg-[#1E2520] rounded-3xl border border-[#E8E4DC] dark:border-[#2D382F]">
+              No foods match your search or filter.
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: AGE-WISE WEANING GUIDE & STAGES */}
       {/* ========================================================================= */}
       {activeTab === 'chart' && (
         <div className="space-y-6">
@@ -424,16 +743,16 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 <button
                   key={stg.stageId}
                   onClick={() => setSelectedStageId(stg.stageId)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
+                  className={`tap-feedback p-3 rounded-2xl border text-left transition-all ${
                     isSelected
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-xs ring-1 ring-emerald-500/20'
-                      : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D0C9BE]'
+                      ? 'bg-[#C8EBCC]/40 dark:bg-[#203D24]/40 border-[#44634B] shadow-xs ring-1 ring-[#44634B]/20'
+                      : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F]'
                   }`}
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#44634B] dark:text-[#ADCFB1]">
                     {stg.ageRange}
                   </div>
-                  <div className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] mt-0.5 truncate">
+                  <div className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5] mt-0.5 truncate">
                     {stg.title.split(':')[1] || stg.title}
                   </div>
                 </button>
@@ -442,14 +761,14 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
           </div>
 
           {/* Active Stage Overview Card */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs space-y-6">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs space-y-6">
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#EAE6DF] dark:border-[#2D2B33] pb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E8E4DC] dark:border-[#2D382F] pb-4">
               <div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 uppercase tracking-wider">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1] uppercase tracking-wider">
                   {activeStage.ageRange} Guidance
                 </span>
-                <h3 className="text-lg font-bold text-[#201E1D] dark:text-[#FAF8F5] mt-1.5">
+                <h3 className="text-base sm:text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] mt-1.5">
                   {activeStage.title}
                 </h3>
                 <p className="text-xs text-[#75706B] dark:text-[#9E9892] mt-0.5">
@@ -462,7 +781,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                   setRecipeStageFilter(activeStage.stageId);
                   setActiveTab('recipes');
                 }}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs transition-colors self-start md:self-auto shrink-0"
+                className="tap-feedback px-3.5 py-2 rounded-xl text-xs font-bold bg-[#44634B] hover:bg-[#344738] text-white flex items-center gap-1.5 shadow-xs transition-colors self-start md:self-auto shrink-0"
               >
                 <ChefHat className="w-3.5 h-3.5" />
                 <span>View {activeStage.ageRange} Recipes</span>
@@ -473,23 +792,23 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               
               {/* Texture */}
-              <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+              <div className="p-4 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
                 <div className="text-[10px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider flex items-center gap-1.5">
-                  <Utensils className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Texture & Consistency</span>
+                  <Utensils className="w-3.5 h-3.5 text-[#44634B]" />
+                  <span>Texture &amp; Consistency</span>
                 </div>
-                <div className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                <div className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                   {activeStage.recommendedTexture}
                 </div>
               </div>
 
               {/* Meal Frequency & Portion */}
-              <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+              <div className="p-4 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
                 <div className="text-[10px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Meal Frequency & Portion</span>
+                  <Clock className="w-3.5 h-3.5 text-[#D97757]" />
+                  <span>Meal Frequency &amp; Portion</span>
                 </div>
-                <div className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                <div className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                   {activeStage.mealFrequency}
                 </div>
                 <div className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
@@ -498,31 +817,31 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               </div>
 
               {/* Milk vs Solids Ratio */}
-              <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+              <div className="p-4 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
                 <div className="text-[10px] font-bold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider flex items-center gap-1.5">
                   <Milk className="w-3.5 h-3.5 text-blue-600" />
                   <span>Milk vs. Solids Balance</span>
                 </div>
-                <div className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                <div className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                   {activeStage.milkVsSolidsRatio}
                 </div>
               </div>
 
             </div>
 
-            {/* Foods Allowed vs Foods to Avoid (2 Columns) */}
+            {/* Foods Allowed vs Foods to Avoid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
               {/* Best First Foods */}
-              <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-4 rounded-2xl bg-[#C8EBCC]/30 dark:bg-[#203D24]/20 border border-[#44634B]/30 space-y-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#03210E] dark:text-[#ADCFB1]">
+                  <CheckCircle2 className="w-4 h-4 text-[#44634B]" />
                   <span>Recommended Foods for this Stage</span>
                 </div>
-                <ul className="text-xs text-[#201E1D] dark:text-[#DDD8D0] space-y-1.5">
+                <ul className="text-xs text-[#191C1A] dark:text-[#FAF8F5] space-y-1.5">
                   {activeStage.bestFirstFoods.map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="text-emerald-600 font-bold">•</span>
+                      <span className="text-[#44634B] font-bold">•</span>
                       <span>{f}</span>
                     </li>
                   ))}
@@ -530,12 +849,12 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               </div>
 
               {/* Foods Strictly Prohibited */}
-              <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 space-y-2.5">
+              <div className="p-4 rounded-2xl bg-[#FFDBD0]/40 dark:bg-[#3D1E16]/30 border border-rose-300 dark:border-rose-900/40 space-y-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-rose-900 dark:text-rose-200">
                   <AlertTriangle className="w-4 h-4 text-rose-600" />
                   <span>Foods Strictly Prohibited at this Stage</span>
                 </div>
-                <ul className="text-xs text-[#201E1D] dark:text-[#DDD8D0] space-y-1.5">
+                <ul className="text-xs text-[#191C1A] dark:text-[#FAF8F5] space-y-1.5">
                   {activeStage.foodsToAvoid.map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-rose-600 font-bold">•</span>
@@ -547,31 +866,12 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
             </div>
 
-            {/* Development & Readiness Milestones */}
-            <div className="space-y-2.5">
-              <h4 className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Physical Developmental Milestones for this Stage</span>
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {activeStage.keyMilestones.map((ms, i) => (
-                  <div
-                    key={i}
-                    className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-xs text-[#4D4845] dark:text-[#C7C2BA] flex items-center gap-2"
-                  >
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>{ms}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Sample Feeding Day Routine */}
-            <div className="space-y-3 pt-2 border-t border-[#EAE6DF] dark:border-[#2D2B33]">
+            <div className="space-y-3 pt-2 border-t border-[#E8E4DC] dark:border-[#2D382F]">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5] uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Sample Daily Feeding & Nap Routine</span>
+                  <span>Sample Daily Routine ({activeStage.ageRange})</span>
                 </h4>
                 <span className="text-[10px] text-[#75706B]">Pediatric Routine</span>
               </div>
@@ -580,13 +880,13 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 {activeStage.sampleDaySchedule.map((item, i) => (
                   <div
                     key={i}
-                    className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between text-xs"
+                    className="p-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] flex items-center justify-between text-xs"
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="font-mono font-bold text-[11px] text-[#75706B] dark:text-[#9E9892] w-18">
                         {item.time}
                       </span>
-                      <span className="text-[#201E1D] dark:text-[#FAF8F5] font-medium">
+                      <span className="text-[#191C1A] dark:text-[#FAF8F5] font-medium">
                         {item.activity}
                       </span>
                     </div>
@@ -596,9 +896,9 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                         item.type === 'milk'
                           ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
                           : item.type === 'solid'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          ? 'bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1]'
                           : item.type === 'snack'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                          ? 'bg-[#FFDDAE] text-[#281800] dark:bg-[#3D2C12] dark:text-[#F8BC58]'
                           : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
                       }`}
                     >
@@ -628,16 +928,15 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: STEP-BY-STEP PEDIATRIC RECIPES */}
+      {/* TAB 3: STEP-BY-STEP TESTED RECIPES */}
       {/* ========================================================================= */}
       {activeTab === 'recipes' && (
         <div className="space-y-6">
           
           {/* Controls: Stage Filter, Category, Search, Iron Toggle */}
-          <div className="p-4 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs space-y-3">
+          <div className="p-4 rounded-3xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs space-y-3">
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Search */}
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#75706B]" />
                 <input
@@ -645,20 +944,20 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                   placeholder="Search recipes (e.g. Ragi, Khichdi, Apple, Iron)..."
                   value={recipeSearch}
                   onChange={(e) => setRecipeSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 rounded-xl text-xs bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full pl-8 pr-3 py-2 rounded-xl text-xs bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-[#44634B]"
                 />
               </div>
 
-              {/* Iron Powerhouse Toggle */}
               <button
+                type="button"
                 onClick={() => setOnlyIronRichRecipes(!onlyIronRichRecipes)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shrink-0 ${
+                className={`tap-feedback px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shrink-0 ${
                   onlyIronRichRecipes
-                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                    : 'bg-[#FAF8F5] dark:bg-[#141317] border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892]'
+                    ? 'bg-[#D97757] text-white border-[#D97757] shadow-xs'
+                    : 'bg-[#F7FAF5] dark:bg-[#161C17] border-[#E8E4DC] dark:border-[#2D382F] text-[#75706B] dark:text-[#9E9892]'
                 }`}
               >
-                <Flame className="w-3.5 h-3.5 text-amber-300" />
+                <Flame className="w-3.5 h-3.5" />
                 <span>⭐ Iron Powerhouse Only</span>
               </button>
             </div>
@@ -675,10 +974,10 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 <button
                   key={pill.id}
                   onClick={() => setRecipeStageFilter(pill.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  className={`tap-feedback px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                     recipeStageFilter === pill.id
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892]'
+                      ? 'bg-[#44634B] text-white shadow-xs'
+                      : 'bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-[#75706B] dark:text-[#9E9892]'
                   }`}
                 >
                   {pill.label}
@@ -694,31 +993,31 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               <div
                 key={recipe.id}
                 onClick={() => setActiveRecipeModal(recipe)}
-                className="p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+                className="tap-feedback p-5 rounded-3xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs hover:border-[#44634B] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1]">
                       {recipe.stage}
                     </span>
                     {recipe.isIronRich && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-rose-600" />
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFDBD0] text-[#99462A] dark:bg-[#3D1E16] dark:text-[#FFB59E] flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-[#D97757]" />
                         <span>Iron Rich</span>
                       </span>
                     )}
                   </div>
 
-                    <div>
-                      <h4 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {recipe.title}
-                      </h4>
-                      {(recipe.bengaliName || recipe.hindiName) && (
-                        <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mt-0.5">
-                          {recipe.bengaliName || recipe.hindiName}
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5] group-hover:text-[#44634B] dark:group-hover:text-[#ADCFB1] transition-colors">
+                      {recipe.title}
+                    </h4>
+                    {(recipe.bengaliName || recipe.hindiName) && (
+                      <div className="text-[11px] font-medium text-[#44634B] dark:text-[#ADCFB1] mt-0.5">
+                        {recipe.bengaliName || recipe.hindiName}
+                      </div>
+                    )}
+                  </div>
 
                   <p className="text-xs text-[#75706B] dark:text-[#9E9892] line-clamp-2">
                     {recipe.texture}
@@ -728,7 +1027,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                     {recipe.keyNutrients.slice(0, 3).map((nut, idx) => (
                       <span
                         key={idx}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892]"
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-[#75706B] dark:text-[#9E9892]"
                       >
                         {nut}
                       </span>
@@ -736,7 +1035,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between text-xs text-[#75706B] dark:text-[#9E9892]">
+                <div className="pt-3 border-t border-[#E8E4DC] dark:border-[#2D382F] flex items-center justify-between text-xs text-[#75706B] dark:text-[#9E9892]">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
@@ -745,210 +1044,29 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                     <span>•</span>
                     <span>{recipe.difficulty}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[#75706B] group-hover:translate-x-1 group-hover:text-emerald-600 transition-all" />
+                  <ChevronRight className="w-4 h-4 text-[#75706B] group-hover:translate-x-1 group-hover:text-[#44634B] transition-transform" />
                 </div>
               </div>
             ))}
           </div>
 
-          {filteredRecipes.length === 0 && (
-            <div className="p-8 text-center text-xs text-[#75706B] dark:text-[#9E9892] bg-white dark:bg-[#1D1C22] rounded-3xl border border-[#EAE6DF] dark:border-[#2D2B33]">
-              No recipes found matching your filters. Try clearing the search or stage filters.
-            </div>
-          )}
-
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: 100 FOODS CHALLENGE & REACTION DIARY */}
-      {/* ========================================================================= */}
-      {activeTab === 'diary' && (
-        <div className="space-y-6">
-          
-          {/* Challenge Level Badge & Stats */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border inline-block ${badge.color}`}>
-                {badge.label}
-              </span>
-              <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] pt-1">
-                The 100 Foods Before Age One Journey
-              </h3>
-              <p className="text-xs text-[#75706B] dark:text-[#9E9892]">
-                Introducing a diverse palette prevents toddler food neophobia and builds lifelong gut microbiome diversity.
-              </p>
-            </div>
-
-            {/* Reaction Counters */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-900/40">
-                ❤️ Loved: {lovedCount}
-              </span>
-              <span className="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-900/40">
-                🙂 Tolerated: {toleratedCount}
-              </span>
-              <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-900/40">
-                😕 Disliked: {dislikedCount}
-              </span>
-              {allergicCount > 0 && (
-                <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-900/40">
-                  ⚠️ Reactions: {allergicCount}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Control Bar: Search & Category Filters */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-              {[
-                { id: 'all', label: 'All Foods' },
-                { id: 'grain', label: '🌾 Grains & Millets' },
-                { id: 'vegetable', label: '🥕 Vegetables' },
-                { id: 'fruit', label: '🍎 Fruits' },
-                { id: 'protein', label: '🥚 Protein & Dal' },
-                { id: 'dairy', label: '🧈 Dairy & Fats' },
-                { id: 'spice', label: '🌿 Mild Aromatics' },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setDiaryCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                    diaryCategory === cat.id
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 sm:w-56">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#75706B]" />
-                <input
-                  type="text"
-                  placeholder="Search foods..."
-                  value={diarySearch}
-                  onChange={(e) => setDiarySearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-
-              {userRole === 'parent' && (
-                <button
-                  onClick={() => setShowAddCustomModal(true)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shrink-0 shadow-xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Custom Food</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Foods Grid (Direct from Stitch 2-Column/3-Column Bento Mockup) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {filteredFoods.map((food) => {
-              const isIntroduced = (food.timesOffered || 0) > 0 || !!food.isIntroduced;
-              const foodEmoji = food.category === 'fruit' ? '🍎' : food.category === 'vegetable' ? '🥦' : food.category === 'grain' ? '🌾' : food.category === 'dairy' ? '🥣' : food.isAllergen ? '🥜' : '🥑';
-
-              return (
-                <div
-                  key={food.id}
-                  className={`flex flex-col justify-between rounded-3xl p-3.5 shadow-[0_4px_16px_-2px_rgba(45,49,46,0.04)] border transition-all ${
-                    isIntroduced
-                      ? food.reaction === 'loved'
-                        ? 'bg-surface-container-lowest border-primary/30 ring-1 ring-primary/20'
-                        : food.reaction === 'allergic'
-                        ? 'bg-surface-container-lowest border-error/40'
-                        : 'bg-surface-container-lowest border-outline-variant/30'
-                      : 'bg-surface-container-low/60 border-dashed border-outline-variant/40'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-1 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-lg shrink-0">
-                        {foodEmoji}
-                      </div>
-
-                      {isIntroduced ? (
-                        <span
-                          className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            food.reaction === 'loved'
-                              ? 'bg-primary-fixed text-on-primary-fixed-variant'
-                              : food.reaction === 'allergic'
-                              ? 'bg-error-container text-on-error-container'
-                              : food.reaction === 'disliked'
-                              ? 'bg-tertiary-fixed text-on-tertiary-fixed'
-                              : 'bg-surface-container-high text-on-surface'
-                          }`}
-                        >
-                          {food.reaction === 'loved' && 'Loved 💚'}
-                          {food.reaction === 'neutral' && 'Liked 🙂'}
-                          {food.reaction === 'disliked' && 'Grimace 😋'}
-                          {food.reaction === 'allergic' && 'Reaction ⚠️'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container text-outline font-medium">
-                          New
-                        </span>
-                      )}
-                    </div>
-
-                    <h4 className="font-headline-md text-sm font-bold text-on-surface truncate">
-                      {food.name}
-                    </h4>
-                    <p className="font-body-sm text-xs text-on-surface-variant truncate mt-0.5">
-                      {food.category} {food.isIronRich ? '• Iron rich' : ''} {food.isAllergen ? '• Allergen' : ''}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 pt-2 border-t border-surface-variant/30 flex items-center justify-between text-on-surface-variant font-label-sm text-xs">
-                    <span className="inline-flex items-center gap-1 font-semibold text-primary">
-                      <span className="material-symbols-outlined text-[14px]">
-                        {isIntroduced ? 'check_circle' : 'schedule'}
-                      </span>
-                      <span>{isIntroduced ? `Tried ${food.timesOffered || 1}x` : 'Not offered'}</span>
-                    </span>
-
-                    {userRole === 'parent' && (
-                      <button
-                        onClick={() => setSelectedFoodForReaction(food)}
-                        className="text-on-surface-variant hover:text-primary transition-colors"
-                        type="button"
-                        aria-label={`Log food ${food.name}`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          {isIntroduced ? 'edit' : 'add_circle'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 4: SAFETY, GAGGING VS CHOKING & ALLERGY PROTOCOL */}
+      {/* TAB 4: SAFETY, GAGGING VS CHOKING */}
       {/* ========================================================================= */}
       {activeTab === 'safety' && (
         <div className="space-y-6">
           
-          {/* GAGGING VS CHOKING COMPARISON (CRITICAL PEDIATRIC LIFESAVER) */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs space-y-4">
+          {/* GAGGING VS CHOKING COMPARISON */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs space-y-4">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-amber-500/10 text-amber-600">
                 <ShieldAlert className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+                <h3 className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
                   Lifesaving Pediatric Guide: Gagging vs. Choking
                 </h3>
                 <p className="text-xs text-[#75706B] dark:text-[#9E9892]">
@@ -960,7 +1078,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
               {/* Gagging */}
-              <div className="p-5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/40 space-y-3">
+              <div className="p-5 rounded-2xl bg-[#FFDDAE]/30 dark:bg-[#3D2C12]/30 border border-[#F8BC58]/50 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                   <h4 className="text-xs font-bold text-amber-950 dark:text-amber-200 uppercase tracking-wider">
@@ -972,7 +1090,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 </p>
                 <div className="space-y-1.5 pt-1">
                   <span className="text-[11px] font-bold text-amber-950 dark:text-amber-200">
-                    What You See & Hear:
+                    What You See &amp; Hear:
                   </span>
                   <ul className="text-xs space-y-1 text-amber-900/80 dark:text-amber-300/80 list-disc pl-4">
                     {GAGGING_VS_CHOKING_GUIDE.gagging.signs.map((s, i) => (
@@ -998,7 +1116,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 </p>
                 <div className="space-y-1.5 pt-1">
                   <span className="text-[11px] font-bold text-rose-950 dark:text-rose-200">
-                    What You See & Hear:
+                    What You See &amp; Hear:
                   </span>
                   <ul className="text-xs space-y-1 text-rose-900/80 dark:text-rose-300/80 list-disc pl-4">
                     {GAGGING_VS_CHOKING_GUIDE.choking.signs.map((s, i) => (
@@ -1015,9 +1133,9 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
           </div>
 
           {/* THE 3-DAY WAIT RULE PROTOCOL */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs space-y-3">
-            <h4 className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] uppercase tracking-wider flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-emerald-600" />
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs space-y-3">
+            <h4 className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5] uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-[#44634B]" />
               <span>The Pediatric 3-Day Wait Rule Protocol</span>
             </h4>
             <p className="text-xs text-[#75706B] dark:text-[#9E9892]">
@@ -1025,9 +1143,9 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase">Day 1: Tasting</span>
-                <p className="text-xs text-[#201E1D] dark:text-[#FAF8F5] font-semibold">
+              <div className="p-3 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
+                <span className="text-[10px] font-bold text-[#44634B] uppercase">Day 1: Tasting</span>
+                <p className="text-xs text-[#191C1A] dark:text-[#FAF8F5] font-semibold">
                   1/4 to 1/2 teaspoon
                 </p>
                 <p className="text-[11px] text-[#75706B]">
@@ -1035,9 +1153,9 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 </p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+              <div className="p-3 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
                 <span className="text-[10px] font-bold text-blue-600 uppercase">Day 2: Increment</span>
-                <p className="text-xs text-[#201E1D] dark:text-[#FAF8F5] font-semibold">
+                <p className="text-xs text-[#191C1A] dark:text-[#FAF8F5] font-semibold">
                   1 to 2 tablespoons
                 </p>
                 <p className="text-[11px] text-[#75706B]">
@@ -1045,39 +1163,14 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 </p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-1">
+              <div className="p-3 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-1">
                 <span className="text-[10px] font-bold text-purple-600 uppercase">Day 3: Clearance</span>
-                <p className="text-xs text-[#201E1D] dark:text-[#FAF8F5] font-semibold">
+                <p className="text-xs text-[#191C1A] dark:text-[#FAF8F5] font-semibold">
                   Normal meal serving
                 </p>
                 <p className="text-[11px] text-[#75706B]">
-                  Offer with confidence. If no adverse reaction occurs, food is officially cleared & safe in baby’s diet!
+                  Offer with confidence. If no adverse reaction occurs, food is officially cleared &amp; safe in baby’s diet!
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* BANNED FOODS UNDER 1 YEAR */}
-          <div className="p-6 rounded-3xl bg-rose-500/10 border border-rose-300/40 dark:border-rose-800/40 space-y-3">
-            <h4 className="text-xs font-bold text-rose-950 dark:text-rose-200 uppercase tracking-wider flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-rose-600" />
-              <span>5 Foods Strictly Banned Before 12 Months (AAP & WHO)</span>
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-[#201E1D] dark:text-[#DDD8D0]">
-              <div className="p-3 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200/50">
-                <strong>1. Honey:</strong> Contains Clostridium botulinum spores that produce deadly toxins in immature infant guts.
-              </div>
-              <div className="p-3 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200/50">
-                <strong>2. Added Salt:</strong> Baby’s kidneys cannot filter extra sodium; can lead to dehydration and hypernatremia.
-              </div>
-              <div className="p-3 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200/50">
-                <strong>3. Added White Sugar:</strong> Causes tooth decay and conditions palate toward sweet addiction.
-              </div>
-              <div className="p-3 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200/50">
-                <strong>4. Cow’s Milk Beverage:</strong> High protein and minerals overload kidneys; causes microscopic intestinal blood loss.
-              </div>
-              <div className="p-3 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200/50 sm:col-span-2">
-                <strong>5. Whole Grapes, Round Nuts & Raw Hard Carrots:</strong> Perfect shape to seal infant trachea completely; always slice lengthwise.
               </div>
             </div>
           </div>
@@ -1085,74 +1178,66 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* FULL RECIPE DETAILS MODAL */}
-      {/* ========================================================================= */}
       {activeRecipeModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-t-3xl sm:rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto no-scrollbar">
-            {/* Drag indicator */}
             <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
             
             <div className="flex items-start justify-between gap-3 border-b border-[#EAE6DF] dark:border-[#2D2B33] pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1]">
                     {activeRecipeModal.stage}
                   </span>
                   {activeRecipeModal.isIronRich && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFDBD0] text-[#99462A] dark:bg-[#3D1E16] dark:text-[#FFB59E]">
                       ⭐ Iron Powerhouse
                     </span>
                   )}
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-[#201E1D] dark:text-[#FAF8F5] mt-1">
+                <h3 className="text-base sm:text-lg font-bold text-[#191C1A] dark:text-[#FAF8F5] mt-1">
                   {activeRecipeModal.title}
                 </h3>
-                {(activeRecipeModal.bengaliName || activeRecipeModal.hindiName) && (
-                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mt-0.5">
-                    {activeRecipeModal.bengaliName || activeRecipeModal.hindiName}
-                  </p>
-                )}
               </div>
 
               <button
                 onClick={() => setActiveRecipeModal(null)}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B]"
+                className="tap-feedback p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Quick Metadata Pill Strip */}
+            {/* Quick Metadata Strip */}
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33]">
+              <div className="p-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F]">
                 <div className="text-[10px] text-[#75706B] font-semibold">Prep Time</div>
-                <div className="font-bold text-[#201E1D] dark:text-[#FAF8F5]">{activeRecipeModal.prepTime}</div>
+                <div className="font-bold text-[#191C1A] dark:text-[#FAF8F5]">{activeRecipeModal.prepTime}</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33]">
+              <div className="p-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F]">
                 <div className="text-[10px] text-[#75706B] font-semibold">Cook Time</div>
-                <div className="font-bold text-[#201E1D] dark:text-[#FAF8F5]">{activeRecipeModal.cookTime}</div>
+                <div className="font-bold text-[#191C1A] dark:text-[#FAF8F5]">{activeRecipeModal.cookTime}</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33]">
+              <div className="p-2.5 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F]">
                 <div className="text-[10px] text-[#75706B] font-semibold">Difficulty</div>
-                <div className="font-bold text-[#201E1D] dark:text-[#FAF8F5]">{activeRecipeModal.difficulty}</div>
+                <div className="font-bold text-[#191C1A] dark:text-[#FAF8F5]">{activeRecipeModal.difficulty}</div>
               </div>
             </div>
 
             {/* Ingredients Section */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-1.5">
-                <Utensils className="w-3.5 h-3.5 text-emerald-600" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#191C1A] dark:text-[#FAF8F5] flex items-center gap-1.5">
+                <Utensils className="w-3.5 h-3.5 text-[#44634B]" />
                 <span>Ingredients</span>
               </h4>
-              <div className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] space-y-2">
                 {activeRecipeModal.ingredients.map((ing, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[#201E1D] dark:text-[#FAF8F5]">
+                    <span className="font-medium text-[#191C1A] dark:text-[#FAF8F5]">
                       • {ing.item}
                     </span>
-                    <span className="font-bold font-mono text-emerald-700 dark:text-emerald-400">
+                    <span className="font-bold font-mono text-[#44634B] dark:text-[#ADCFB1]">
                       {ing.amount}
                     </span>
                   </div>
@@ -1160,22 +1245,22 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               </div>
             </div>
 
-            {/* Step-by-Step Instructions */}
+            {/* Instructions */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#191C1A] dark:text-[#FAF8F5] flex items-center gap-1.5">
                 <ChefHat className="w-3.5 h-3.5 text-amber-500" />
-                <span>Step-by-Step Cooking Instructions</span>
+                <span>Step-by-Step Instructions</span>
               </h4>
               <div className="space-y-2">
                 {activeRecipeModal.instructions.map((step, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] flex items-start gap-3 text-xs"
+                    className="p-3 rounded-2xl bg-white dark:bg-[#1E2520] border border-[#E0E3DF] dark:border-[#2D382F] flex items-start gap-3 text-xs"
                   >
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-full bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
-                    <p className="text-[#363331] dark:text-[#D5CFC7] leading-relaxed">
+                    <p className="text-[#191C1A] dark:text-[#FAF8F5] leading-relaxed">
                       {step}
                     </p>
                   </div>
@@ -1183,27 +1268,11 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               </div>
             </div>
 
-            {/* Pediatric Pro-Tip Card */}
-            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-200 text-xs space-y-1">
-              <div className="font-bold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                <span>Pediatric Nutritionist Pro-Tip</span>
-              </div>
-              <p className="opacity-90 leading-relaxed">
-                {activeRecipeModal.pediatricTip}
-              </p>
-            </div>
-
-            {/* Storage Guidance */}
-            <div className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-              🧊 <strong>Storage & Shelf Life:</strong> {activeRecipeModal.storageGuidance}
-            </div>
-
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-2 border-t border-[#EAE6DF] dark:border-[#2D2B33]">
+            <div className="flex gap-2 pt-2 border-t border-[#E8E4DC] dark:border-[#2D382F]">
               <button
                 onClick={() => setActiveRecipeModal(null)}
-                className="flex-1 py-2.5 rounded-xl font-semibold border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs"
+                className="tap-feedback flex-1 py-2.5 rounded-xl font-semibold border border-[#E8E4DC] dark:border-[#2D382F] text-[#424842] dark:text-[#9E9892] text-xs"
               >
                 Close
               </button>
@@ -1211,10 +1280,10 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               {userRole === 'parent' && (
                 <button
                   onClick={() => handleMarkRecipeCooked(activeRecipeModal)}
-                  className="flex-1 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all active:scale-[0.98] text-xs flex items-center justify-center gap-1.5"
+                  className="tap-feedback flex-1 py-2.5 rounded-xl font-bold bg-[#44634B] hover:bg-[#344738] text-white shadow-sm text-xs flex items-center justify-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Mark as Cooked in Diary</span>
+                  <span>Mark Cooked in Diary</span>
                 </button>
               )}
             </div>
@@ -1223,17 +1292,14 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* UPDATE FOOD REACTION MODAL */}
-      {/* ========================================================================= */}
       {selectedFoodForReaction && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            {/* Drag indicator */}
             <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
             <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
               <div>
-                <h3 className="font-bold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
+                <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
                   {selectedFoodForReaction.name}
                 </h3>
                 <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
@@ -1242,7 +1308,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
               </div>
               <button
                 onClick={() => setSelectedFoodForReaction(null)}
-                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B]"
+                className="tap-feedback p-1 rounded-full text-[#75706B]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1251,7 +1317,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => handleUpdateFoodReaction(selectedFoodForReaction.id, 'loved')}
-                className="p-3 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 flex flex-col items-center gap-1 hover:scale-102 transition-transform"
+                className="tap-feedback p-3 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 flex flex-col items-center gap-1"
               >
                 <Smile className="w-5 h-5 text-emerald-600" />
                 <span className="text-xs font-bold">Loved It!</span>
@@ -1259,7 +1325,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
               <button
                 onClick={() => handleUpdateFoodReaction(selectedFoodForReaction.id, 'neutral')}
-                className="p-3 rounded-2xl border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 flex flex-col items-center gap-1 hover:scale-102 transition-transform"
+                className="tap-feedback p-3 rounded-2xl border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 flex flex-col items-center gap-1"
               >
                 <Meh className="w-5 h-5 text-blue-600" />
                 <span className="text-xs font-bold">Tolerated</span>
@@ -1267,7 +1333,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
               <button
                 onClick={() => handleUpdateFoodReaction(selectedFoodForReaction.id, 'disliked')}
-                className="p-3 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 flex flex-col items-center gap-1 hover:scale-102 transition-transform"
+                className="tap-feedback p-3 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 flex flex-col items-center gap-1"
               >
                 <Frown className="w-5 h-5 text-amber-600" />
                 <span className="text-xs font-bold">Disliked</span>
@@ -1275,7 +1341,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
 
               <button
                 onClick={() => handleUpdateFoodReaction(selectedFoodForReaction.id, 'allergic', ['mild rash'])}
-                className="p-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 flex flex-col items-center gap-1 hover:scale-102 transition-transform"
+                className="tap-feedback p-3 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 flex flex-col items-center gap-1"
               >
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
                 <span className="text-xs font-bold">Allergy Reaction</span>
@@ -1285,21 +1351,18 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* ADD CUSTOM FAMILY FOOD MODAL */}
-      {/* ========================================================================= */}
+      {/* ADD CUSTOM FOOD MODAL */}
       {showAddCustomModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            {/* Drag indicator */}
             <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
             <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
-              <h3 className="font-bold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
+              <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
                 Add Custom Family Food
               </h3>
               <button
                 onClick={() => setShowAddCustomModal(false)}
-                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B]"
+                className="tap-feedback p-1 rounded-full text-[#75706B]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1316,7 +1379,7 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                   placeholder="e.g. Soft Idli Mash with Dal..."
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5]"
                 />
               </div>
 
@@ -1327,20 +1390,20 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
                 <select
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] text-[#191C1A] dark:text-[#FAF8F5]"
                 >
-                  <option value="grain">Grains & Millets</option>
+                  <option value="grain">Grains &amp; Millets</option>
                   <option value="vegetable">Vegetables</option>
                   <option value="fruit">Fruits</option>
-                  <option value="protein">Proteins & Legumes</option>
-                  <option value="dairy">Dairy & Fats</option>
-                  <option value="spice">Mild Herbs & Aromatics</option>
+                  <option value="protein">Proteins &amp; Legumes</option>
+                  <option value="dairy">Dairy &amp; Fats</option>
+                  <option value="spice">Mild Herbs &amp; Aromatics</option>
                 </select>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm mt-2"
+                className="tap-feedback w-full py-2.5 rounded-xl font-bold text-xs bg-[#44634B] hover:bg-[#344738] text-white shadow-sm mt-2"
               >
                 Add to 100 Foods Challenge
               </button>
