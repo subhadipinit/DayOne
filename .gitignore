@@ -37,3 +37,4 @@ yarn-error.log*
 .agents/
 .gemini/
 .mcp.json
+stitch_export/

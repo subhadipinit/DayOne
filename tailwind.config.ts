@@ -49,11 +49,22 @@ const config: Config = {
         "on-primary": {
           DEFAULT: "#FFFFFF",
           fixed: "#03210E",
+          "fixed-variant": "#2F4D37",
         },
         "on-secondary": {
           DEFAULT: "#FFFFFF",
           fixed: "#390B00",
+          "fixed-variant": "#7A2F15",
+          container: "#762C12",
         },
+        "on-tertiary": {
+          DEFAULT: "#FFFFFF",
+          fixed: "#281800",
+        },
+        "inverse-surface": "#2D312E",
+        "inverse-on-surface": "#EFF2ED",
+        "outline-variant": "#C2C8C0",
+        outline: "#727972",
         pastel: {
           canvas: "#FAF8F5",
           card: "#FFFFFF",

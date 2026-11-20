@@ -43,7 +43,7 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 
 export default function Home() {
   const store = useBabyStore();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('vaccines');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('daily');
   const [isCelebrationOpen, setIsCelebrationOpen] = useState<boolean>(false);
   const [isShareCardOpen, setIsShareCardOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -179,83 +179,83 @@ export default function Home() {
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <button
-              data-tab="vaccines"
-              onClick={() => setActiveTab('vaccines')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'vaccines'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              data-tab="daily"
+              onClick={() => setActiveTab('daily')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'daily'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
-              <Syringe className="w-3.5 h-3.5" />
-              <span>Vaccine Tracker</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${activeTab === 'vaccines'
-                ? 'bg-white/25 text-white'
-                : 'bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0]'
-                }`}>
-                {store.vaccines.filter((v) => v.status === 'given').length}/{store.vaccines.length}
-              </span>
+              <Baby className="w-3.5 h-3.5" />
+              <span>Today Dashboard</span>
             </button>
 
             <button
               data-tab="growth"
               onClick={() => setActiveTab('growth')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'growth'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'growth'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
               <span>WHO Growth</span>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${activeTab === 'growth'
-                ? 'bg-white/25 text-white'
-                : 'bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0]'
+                ? 'bg-white/20 text-white'
+                : 'bg-surface-container-high text-on-surface-variant'
                 }`}>
                 {store.growthRecords.length}
               </span>
             </button>
 
             <button
-              data-tab="daily"
-              onClick={() => setActiveTab('daily')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'daily'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
-                }`}
-            >
-              <Baby className="w-3.5 h-3.5" />
-              <span>Daily Care</span>
-            </button>
-
-            <button
-              data-tab="tummy"
-              onClick={() => setActiveTab('tummy')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'tummy'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
-                }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Tummy Time</span>
-            </button>
-
-            <button
               data-tab="weaning"
               onClick={() => setActiveTab('weaning')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'weaning'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'weaning'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <Utensils className="w-3.5 h-3.5" />
-              <span>First Foods (6M+)</span>
+              <span>100 Foods Weaning</span>
+            </button>
+
+            <button
+              data-tab="vaccines"
+              onClick={() => setActiveTab('vaccines')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'vaccines'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                }`}
+            >
+              <Syringe className="w-3.5 h-3.5" />
+              <span>Vaccines</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${activeTab === 'vaccines'
+                ? 'bg-white/20 text-white'
+                : 'bg-surface-container-high text-on-surface-variant'
+                }`}>
+                {store.vaccines.filter((v) => v.status === 'given').length}/{store.vaccines.length}
+              </span>
+            </button>
+
+            <button
+              data-tab="teeth"
+              onClick={() => setActiveTab('teeth')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'teeth'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                }`}
+            >
+              <span>🦷</span>
+              <span>Baby Teeth</span>
             </button>
 
             <button
               data-tab="milestones"
               onClick={() => setActiveTab('milestones')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'milestones'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'milestones'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <Award className="w-3.5 h-3.5" />
@@ -263,35 +263,47 @@ export default function Home() {
             </button>
 
             <button
-              data-tab="teeth"
-              onClick={() => setActiveTab('teeth')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'teeth'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              data-tab="tummy"
+              onClick={() => setActiveTab('tummy')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'tummy'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
-              <span>🦷</span>
-              <span>Teeth Map</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Tummy Time</span>
             </button>
 
             <button
               data-tab="dose"
               onClick={() => setActiveTab('dose')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'dose'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'dose'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <Calculator className="w-3.5 h-3.5" />
-              <span>Fever & Dose</span>
+              <span>Fever &amp; Dose</span>
+            </button>
+
+            <button
+              data-tab="doctor"
+              onClick={() => setActiveTab('doctor')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'doctor'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                }`}
+            >
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>Doctor Visit &amp; Rx</span>
             </button>
 
             <button
               data-tab="mom"
               onClick={() => setActiveTab('mom')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'mom'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'mom'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" />
@@ -299,30 +311,18 @@ export default function Home() {
             </button>
 
             <button
-              data-tab="doctor"
-              onClick={() => setActiveTab('doctor')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'doctor'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
-                }`}
-            >
-              <Stethoscope className="w-3.5 h-3.5" />
-              <span>Doctor Visit & Rx</span>
-            </button>
-
-            <button
               data-tab="memories"
               onClick={() => setActiveTab('memories')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 active:scale-[0.97] select-none ${activeTab === 'memories'
-                ? 'bg-[#E2765A] text-white shadow-sm'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white hover:bg-[#F2ECE3] dark:hover:bg-[#1D1C22]'
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 active:scale-95 select-none ${activeTab === 'memories'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>Milestone Records</span>
+              <span>Scrapbook</span>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${activeTab === 'memories'
-                ? 'bg-white/25 text-white'
-                : 'bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0]'
+                ? 'bg-white/20 text-white'
+                : 'bg-surface-container-high text-on-surface-variant'
                 }`}>
                 {store.memories.length}
               </span>

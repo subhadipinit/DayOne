@@ -2,20 +2,21 @@
 
 import React, { useState } from 'react';
 import {
+  Syringe,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
   ShieldCheck,
   Calendar,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
   IndianRupee,
-  Building2,
-  Syringe,
-  Check,
-  ChevronRight,
   Upload,
-  Receipt,
-  Info,
   ExternalLink,
+  ChevronRight,
+  Filter,
+  Check,
+  Bell,
+  Info,
+  X,
 } from 'lucide-react';
 import { VaccineRecord } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
@@ -31,75 +32,51 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
   onUpdateVaccine,
   userRole,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'government' | 'private' | 'upcoming' | 'given'>('all');
+  const [filter, setFilter] = useState<'all' | 'essential' | 'optional' | 'upcoming'>('all');
   const [editingVaccine, setEditingVaccine] = useState<VaccineRecord | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Categorized counts
-  const govtVaccines = vaccines.filter((v) => v.category === 'government');
-  const privateVaccines = vaccines.filter((v) => v.category === 'private');
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
-  // Stats calculation
   const totalGiven = vaccines.filter((v) => v.status === 'given').length;
-  const totalPrivateSpent = vaccines
-    .filter((v) => v.category === 'private' && v.status === 'given' && v.costInr)
-    .reduce((sum, v) => sum + (v.costInr || 0), 0);
+  const totalCount = vaccines.length || 22;
+  const progressPct = Math.round((totalGiven / totalCount) * 100);
 
-  const estimatedTotalPrivate = privateVaccines.reduce((sum, v) => sum + (v.costInr || 0), 0);
-
-  // All pending vaccines (upcoming or overdue), sorted by due date ascending
-  const pendingVaccines = vaccines
-    .filter((v) => v.status === 'upcoming' || v.status === 'overdue')
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-  // Group pending vaccines by unique session date (YYYY-MM-DD)
-  const sessionDates: string[] = [];
-  const sessionMap = new Map<string, VaccineRecord[]>();
-
-  pendingVaccines.forEach((v) => {
-    const dateKey = v.dueDate.split('T')[0];
-    if (!sessionMap.has(dateKey)) {
-      sessionMap.set(dateKey, []);
-      sessionDates.push(dateKey);
-    }
-    sessionMap.get(dateKey)!.push(v);
-  });
-
-  // Nearest upcoming session
-  const nearestDateKey = sessionDates[0] || null;
-  const nextSessionVaccines = nearestDateKey ? sessionMap.get(nearestDateKey) || [] : [];
-
-  // Active selected session for the "upcoming" tab:
-  // 'nearest' (default: the immediate upcoming session showing all multiple doses due on that date)
-  // or a specific dateKey from sessionDates, or 'all_future'
-  const [selectedUpcomingSession, setSelectedUpcomingSession] = useState<string>('nearest');
-
-  // Filtered vaccines list
+  // Filter doses
   const filteredVaccines = vaccines.filter((v) => {
-    if (filter === 'government') return v.category === 'government';
-    if (filter === 'private') return v.category === 'private';
-    if (filter === 'upcoming') {
-      if (selectedUpcomingSession === 'all_future') {
-        return v.status === 'upcoming' || v.status === 'overdue';
-      }
-      const targetDate = selectedUpcomingSession === 'nearest' ? nearestDateKey : selectedUpcomingSession;
-      if (!targetDate) return false;
-      return (v.status === 'upcoming' || v.status === 'overdue') && v.dueDate.split('T')[0] === targetDate;
-    }
-    if (filter === 'given') return v.status === 'given';
+    if (filter === 'essential') return v.category === 'government';
+    if (filter === 'optional') return v.category === 'private';
+    if (filter === 'upcoming') return v.status === 'upcoming' || v.status === 'overdue';
     return true;
   });
 
-  const activeTargetDate = selectedUpcomingSession === 'nearest' ? nearestDateKey : selectedUpcomingSession;
-  const currentSessionDoses = activeTargetDate && sessionMap.has(activeTargetDate) ? sessionMap.get(activeTargetDate)! : [];
-  const currentSessionAge = currentSessionDoses[0]?.ageDueDisplay || 'Upcoming';
-  const currentSessionDateFormatted = activeTargetDate
-    ? new Date(activeTargetDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '';
+  // Group by milestone age
+  const groupedMilestones = filteredVaccines.reduce((acc, dose) => {
+    const ageKey = dose.ageDueDisplay || 'Scheduled';
+    if (!acc[ageKey]) acc[ageKey] = [];
+    acc[ageKey].push(dose);
+    return acc;
+  }, {} as Record<string, VaccineRecord[]>);
+
+  // Next due dose
+  const nextDueDose = vaccines.find((v) => v.status === 'upcoming' || v.status === 'overdue') || vaccines[0];
+
+  const handleQuickMarkGiven = (id: string, name: string) => {
+    onUpdateVaccine(id, {
+      status: 'given',
+      dateAdministered: new Date().toISOString().split('T')[0],
+    });
+    showToast(`${name} marked as given! 🛡️`);
+  };
 
   const handleSaveModal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVaccine) return;
     onUpdateVaccine(editingVaccine.id, editingVaccine);
+    showToast(`${editingVaccine.name} records saved!`);
     setEditingVaccine(null);
   };
 
@@ -115,599 +92,333 @@ export const VaccineTracker: React.FC<VaccineTrackerProps> = ({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-reveal">
+      
+      {/* Toast popup */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 max-w-[90vw] animate-in fade-in slide-in-from-top-4">
+          <div className="bg-[#2D312E]/95 text-[#EFF2ED] backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2.5 text-xs font-semibold border border-white/10">
+            <CheckCircle2 className="w-4 h-4 text-[#C8EBCC]" />
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
 
-      {/* NEXT DUE ALERT BANNER (Direct from Stitch Mockup) */}
-      <div className="bg-[#FFDBD0]/40 dark:bg-[#3D251C]/40 border border-[#FCDCCB] dark:border-[#543830] rounded-2xl p-4 sm:p-5 shadow-xs relative overflow-hidden">
+      {/* Header Title */}
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
+          Vaccine Schedule & Immunization
+        </h2>
+        <p className="text-xs text-[#424842] dark:text-[#9E9892]">
+          Official CDC & WHO immunization schedule alignment
+        </p>
+      </div>
+
+      {/* 1. Next Due Alert Banner (Terracotta Toned from Stitch Mockup) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-[#FFDBD0]/40 dark:bg-[#3D1E16]/40 p-4 sm:p-5 shadow-sm border border-[#FE9572]/40 dark:border-[#543830]">
         <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#FFDBD0] dark:bg-[#543830] flex items-center justify-center text-[#99462A] dark:text-[#FFB59E] shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[#99462A] text-white flex items-center justify-center shrink-0 shadow-sm">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#99462A] dark:text-[#FFB59E]">
-                Next Checkup Due
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFDBD0] dark:bg-[#543830] text-[#99462A] dark:text-[#FFB59E]">
-                {currentSessionAge}
+            <div className="inline-flex items-center gap-1.5 bg-[#FFDBD0] dark:bg-[#543830] text-[#762C12] dark:text-[#FFB59E] px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#99462A] animate-pulse" />
+              <span className="text-[11px] font-bold">
+                {nextDueDose ? `Due Soon • ${nextDueDose.ageDueDisplay}` : 'All caught up!'}
               </span>
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-on-surface dark:text-[#FAF8F5] leading-snug mt-0.5">
-              {currentSessionDoses.length > 0
-                ? currentSessionDoses.map((v) => v.name).join(' + ')
-                : 'All scheduled milestone doses up to date'}
+            <h3 className="text-base font-bold text-[#191C1A] dark:text-[#FAF8F5] leading-snug mt-1.5">
+              {nextDueDose ? nextDueDose.name : 'Routine vaccines completed'}
             </h3>
-            <p className="text-xs text-on-surface-variant dark:text-[#9E9892] mt-0.5">
-              {currentSessionDateFormatted ? `Scheduled for: ${currentSessionDateFormatted}` : 'Routine milestones clear'} • Pediatric Clinic Checkup
+            <p className="text-xs text-[#99462A] dark:text-[#FFB59E] font-semibold mt-0.5">
+              {nextDueDose ? nextDueDose.targetDiseases : 'Protected against major childhood illnesses'}
             </p>
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-[#424842] dark:text-[#A8A29E]">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>
+                Due date: {nextDueDose ? new Date(nextDueDose.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Up to date'}
+              </span>
+            </div>
 
-            <div className="flex items-center gap-2 mt-3">
-              {userRole === 'parent' && currentSessionDoses.length > 0 && (
+            <div className="flex items-center gap-2 mt-3.5 pt-1">
+              {nextDueDose && nextDueDose.status !== 'given' && (
                 <button
                   type="button"
-                  onClick={() => setEditingVaccine(currentSessionDoses[0])}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#44634B] hover:bg-[#38533E] text-white transition-all shadow-xs active:scale-[0.97]"
+                  onClick={() => handleQuickMarkGiven(nextDueDose.id, nextDueDose.name)}
+                  className="flex-1 py-2 px-4 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-semibold text-center shadow-xs active:scale-95 transition-all cursor-pointer"
                 >
                   Mark as Given
                 </button>
               )}
-              <span className="text-xs text-on-surface-variant dark:text-[#9E9892]">
-                {currentSessionDoses.length} {currentSessionDoses.length === 1 ? 'dose' : 'doses'} due
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* IMMUNIZATION PROTECTION & STATS BENTO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Immunization Progress */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant dark:text-[#9E9892]">
-              Immunization Protection
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-[#EDF5EE] dark:bg-[#19261C] flex items-center justify-center text-[#23522A] dark:text-[#ADCFB1]">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-on-surface dark:text-[#FAF8F5] tabular-nums">
-              {totalGiven} <span className="text-sm font-semibold text-on-surface-variant">/ {vaccines.length}</span>
-            </span>
-            <span className="text-xs font-semibold text-[#44634B] dark:text-[#ADCFB1]">
-              ({Math.round((totalGiven / (vaccines.length || 1)) * 100)}% Protected)
-            </span>
-          </div>
-          <div className="w-full bg-[#EAE6DF] dark:bg-[#26242C] h-2 rounded-full mt-2.5 overflow-hidden">
-            <div
-              className="bg-[#44634B] dark:bg-[#ADCFB1] h-full rounded-full transition-all duration-300"
-              style={{ width: `${Math.round((totalGiven / (vaccines.length || 1)) * 100)}%` }}
-            />
-          </div>
-          <p className="text-[10px] text-on-surface-variant dark:text-[#9E9892] mt-2">
-            Alters automatically with CDC & IAP pediatric schedule
-          </p>
-        </div>
-
-        {/* Private Clinic Out-of-Pocket */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant dark:text-[#9E9892]">
-              Private Clinic Expenses
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-[#EEF5FC] dark:bg-[#172330] flex items-center justify-center text-[#184F7D] dark:text-[#A9CBED]">
-              <IndianRupee className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-on-surface dark:text-[#FAF8F5] tabular-nums">
-            ₹{totalPrivateSpent.toLocaleString('en-IN')}
-          </p>
-          <p className="text-[11px] text-on-surface-variant dark:text-[#9E9892] mt-0.5">
-            Spent to date • Est. ₹{estimatedTotalPrivate.toLocaleString('en-IN')} total private optional shots
-          </p>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
-        <div className="flex items-center gap-1.5 p-1 rounded-full bg-[#F2ECE3] dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] overflow-x-auto max-w-full">
-
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${filter === 'all'
-                ? 'bg-[#E2765A] text-white shadow-xs'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
-              }`}
-          >
-            All Doses ({vaccines.length})
-          </button>
-
-          <button
-            onClick={() => setFilter('government')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shrink-0 ${filter === 'government'
-                ? 'bg-[#23522A] text-white shadow-xs'
-                : 'text-[#23522A] dark:text-[#AECDB2] hover:bg-[#E2EDE3] dark:hover:bg-[#203323]'
-              }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>WB Govt (Free • {govtVaccines.length})</span>
-          </button>
-
-          <button
-            onClick={() => setFilter('private')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shrink-0 ${filter === 'private'
-                ? 'bg-[#8A3510] text-white shadow-xs'
-                : 'text-[#8A3510] dark:text-[#F8BCA0] hover:bg-[#FEEAE0] dark:hover:bg-[#33221E]'
-              }`}
-          >
-            <Syringe className="w-3.5 h-3.5" />
-            <span>Private Only (Must Buy • {privateVaccines.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setFilter('upcoming');
-              setSelectedUpcomingSession('nearest');
-            }}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shrink-0 ${filter === 'upcoming'
-                ? 'bg-[#E2765A] text-white shadow-xs'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
-              }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Upcoming ({nextSessionVaccines.length} due next)</span>
-          </button>
-
-          <button
-            onClick={() => setFilter('given')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 shrink-0 ${filter === 'given'
-                ? 'bg-[#E2765A] text-white shadow-xs'
-                : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
-              }`}
-          >
-            Administered ({totalGiven})
-          </button>
-
-        </div>
-
-        <span className="text-xs text-[#75706B] dark:text-[#9E9892]">
-          Showing {filteredVaccines.length} {filter === 'upcoming' && selectedUpcomingSession !== 'all_future' ? 'doses due on this date' : 'vaccines'}
-        </span>
-      </div>
-
-      {/* Informative Guidance Banner for WB Govt Free Schedule */}
-      {filter === 'government' && (
-        <div className="p-4 rounded-2xl border border-[#CFE2D1] dark:border-[#2D4A33] bg-[#EDF5EE]/90 dark:bg-[#1A2E1F]/80 text-xs text-[#23522A] dark:text-[#AECDB2] flex items-start gap-3">
-          <Building2 className="w-5 h-5 shrink-0 text-[#2E6836] mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold text-sm text-[#1A4220] dark:text-[#CBE9CF]">
-              West Bengal Government Universal Immunization Programme (UIP) • 100% Free
-            </p>
-            <p className="leading-relaxed text-[#23522A]/90 dark:text-[#AECDB2]/90">
-              All <strong>{govtVaccines.length} doses</strong> listed below are provided <strong>completely free of cost</strong> by the Department of Health & Family Welfare (Swasthya Bhawan), Government of West Bengal. You can receive these at any local Sub-centre, Anganwadi centre, Urban PHC, BPHC, Sub-divisional Hospital, District Hospital, or State Medical College (e.g., SSKM Hospital, Kolkata Medical College, B.C. Roy Post Graduate Institute of Paediatric Sciences).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Informative Guidance Banner for Private Clinic Must-Buy Schedule */}
-      {filter === 'private' && (
-        <div className="p-4 rounded-2xl border border-[#FCDCCB] dark:border-[#543830] bg-[#FFF0E6]/90 dark:bg-[#2D2422]/80 text-xs text-[#8A3510] dark:text-[#F8BCA0] flex items-start gap-3">
-          <Syringe className="w-5 h-5 shrink-0 text-[#E2765A] mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold text-sm text-[#6E2B0D] dark:text-[#FFA985]">
-              Private Clinic Only Schedule • Must Buy Out-of-Pocket
-            </p>
-            <p className="leading-relaxed text-[#8A3510]/90 dark:text-[#F8BCA0]/90">
-              The <strong>{privateVaccines.length} vaccines</strong> shown below are <strong>NOT provided by the West Bengal Government</strong> for free. They are strongly recommended by the Indian Academy of Pediatrics (IAP) for full protection against seasonal swine flu (Influenza), typhoid fever (TCV), food & waterborne hepatitis (Hep A), chickenpox (Varicella), mumps (MMR), and cervical cancer (HPV). Parents must purchase these at private pediatric clinics or private hospitals (e.g., Apollo Gleneagles, Bhagirathi Neotia, Fortis, Woodlands).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming Session Guidance Banner with Multi-Dose & Session Picker */}
-      {filter === 'upcoming' && (
-        <div className="p-4 rounded-2xl border border-[#F6E6B8] dark:border-[#42371E] bg-[#FDF6E2]/90 dark:bg-[#292416]/80 text-xs text-[#6E4D05] dark:text-[#EECD85] space-y-3">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="flex items-start gap-2.5 min-w-0">
-              <Calendar className="w-5 h-5 shrink-0 text-[#E2765A] mt-0.5" />
-              <div>
-                <p className="font-bold text-sm text-[#4D3502] dark:text-[#F3D797]">
-                  {selectedUpcomingSession === 'all_future' ? (
-                    `All Upcoming Future Vaccines (${pendingVaccines.length} pending doses)`
-                  ) : (
-                    `Upcoming Visit: ${currentSessionAge} Session • Due ${currentSessionDateFormatted}`
-                  )}
-                </p>
-                <p className="mt-0.5 leading-relaxed text-[#6E4D05]/90 dark:text-[#EECD85]/90">
-                  {selectedUpcomingSession === 'all_future' ? (
-                    'Viewing all future pending vaccines. Click any visit session below to focus on doses due together.'
-                  ) : (
-                    <>
-                      <strong>Multiple Doses Due:</strong> There are <strong>{filteredVaccines.length} vaccines</strong> scheduled for administration during this same pediatric visit.
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Switcher: Next Due Session vs All Future */}
-            <div className="flex items-center gap-1 bg-white/70 dark:bg-black/20 p-1 rounded-xl border border-[#F6E6B8] dark:border-[#42371E] shrink-0">
               <button
                 type="button"
-                onClick={() => setSelectedUpcomingSession('nearest')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedUpcomingSession === 'nearest'
-                    ? 'bg-[#E2765A] text-white shadow-xs'
-                    : 'text-[#6E4D05] dark:text-[#EECD85] hover:bg-white/50 dark:hover:bg-black/30'
-                  }`}
+                onClick={() => showToast(`Reminder set for ${nextDueDose?.name || 'next visit'}`)}
+                className="flex items-center justify-center gap-1.5 py-2 px-4 rounded-full bg-white dark:bg-[#1E2520] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-semibold shadow-xs border border-[#E8E4DC] dark:border-[#2D382F] active:scale-95 transition-all cursor-pointer"
               >
-                Next Due ({nextSessionVaccines.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedUpcomingSession('all_future')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedUpcomingSession === 'all_future'
-                    ? 'bg-[#E2765A] text-white shadow-xs'
-                    : 'text-[#6E4D05] dark:text-[#EECD85] hover:bg-white/50 dark:hover:bg-black/30'
-                  }`}
-              >
-                All Future ({pendingVaccines.length})
+                <Bell className="w-3.5 h-3.5 text-[#99462A]" />
+                <span>Remind</span>
               </button>
             </div>
           </div>
-
-          {/* Visit Session Pills (e.g. 6 Weeks, 10 Weeks, 14 Weeks) */}
-          {sessionDates.length > 1 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 no-scrollbar">
-              <span className="text-[11px] font-semibold text-[#6E4D05]/80 dark:text-[#EECD85]/80 shrink-0">
-                Scheduled Visits:
-              </span>
-              {sessionDates.map((dateKey, idx) => {
-                const dosesInSession = sessionMap.get(dateKey) || [];
-                const ageDisplay = dosesInSession[0]?.ageDueDisplay || dateKey;
-                const isSelected =
-                  (selectedUpcomingSession === 'nearest' && idx === 0) ||
-                  selectedUpcomingSession === dateKey;
-                const isOverdue = dosesInSession.some((d) => d.status === 'overdue');
-
-                return (
-                  <button
-                    key={dateKey}
-                    type="button"
-                    onClick={() => setSelectedUpcomingSession(dateKey)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] transition-all shrink-0 border flex items-center gap-1.5 ${isSelected
-                        ? 'bg-[#6E4D05] dark:bg-[#EECD85] text-white dark:text-[#292416] border-[#6E4D05] dark:border-[#EECD85] font-bold shadow-xs'
-                        : 'bg-white/80 dark:bg-[#1D1C22]/80 text-[#6E4D05] dark:text-[#EECD85] border-[#F6E6B8] dark:border-[#42371E] hover:bg-white dark:hover:bg-[#1D1C22]'
-                      }`}
-                  >
-                    {isOverdue && <span className="w-1.5 h-1.5 rounded-full bg-red-500" title="Overdue" />}
-                    <span>{ageDisplay}</span>
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${isSelected
-                          ? 'bg-white/25 dark:bg-black/25 text-white dark:text-[#292416]'
-                          : 'bg-[#F6E6B8] dark:bg-[#42371E] text-[#6E4D05] dark:text-[#EECD85]'
-                        }`}
-                    >
-                      {dosesInSession.length}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
-      )}
+      </div>
 
-      {/* Vaccine Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {filteredVaccines.length === 0 ? (
-          <div className="col-span-full p-8 rounded-2xl border border-dashed border-[#EAE6DF] dark:border-[#2D2B33] bg-white/60 dark:bg-[#1D1C22]/60 text-center">
-            <CheckCircle2 className="w-8 h-8 text-[#5A9663] mx-auto mb-2" />
-            <p className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5]">
-              No pending vaccines for this selection!
-            </p>
-            <p className="text-xs text-[#75706B] dark:text-[#9E9892] mt-1">
-              All doses for this round are up to date.
-            </p>
+      {/* 2. Immunization Progress Bento Card (Stitch Radial Meter) */}
+      <div className="bg-white dark:bg-[#1E2520] rounded-[28px] p-5 shadow-sm border border-[#E8E4DC] dark:border-[#2D382F] flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#424842] dark:text-[#9E9892]">
+              Overall Protection
+            </span>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <span className="text-3xl font-extrabold text-[#191C1A] dark:text-[#FAF8F5] tabular-nums">
+                {totalGiven}
+              </span>
+              <span className="text-sm font-semibold text-[#424842] dark:text-[#9E9892]">
+                / {totalCount} Doses
+              </span>
+              <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] text-xs font-bold">
+                {progressPct}%
+              </span>
+            </div>
           </div>
-        ) : (
-          filteredVaccines.map((vax) => {
-            const isGiven = vax.status === 'given';
-            const isOverdue = vax.status === 'overdue';
-            const isGovt = vax.category === 'government';
 
-            return (
-              <div
-                key={vax.id}
-                className={`rounded-2xl p-4 border transition-colors duration-150 shadow-xs space-y-3 ${isGovt
-                    ? 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#CFE2D1]'
-                    : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#FCDCCB]'
-                  }`}
-              >
-                {/* Header Badges */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
+          {/* Radial Ring SVG Meter (Stitch) */}
+          <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+            <svg className="w-14 h-14 -rotate-90" viewBox="0 0 48 48">
+              <circle
+                className="stroke-[#E6E9E4] dark:stroke-[#2D382F]"
+                cx="24"
+                cy="24"
+                fill="none"
+                r="19"
+                strokeWidth="4.5"
+              />
+              <circle
+                className="stroke-[#44634B] dark:stroke-[#ADCFB1] transition-all duration-700 ease-out"
+                cx="24"
+                cy="24"
+                fill="none"
+                r="19"
+                strokeDasharray="119.38"
+                strokeDashoffset={119.38 - (119.38 * progressPct) / 100}
+                strokeLinecap="round"
+                strokeWidth="4.5"
+              />
+            </svg>
+            <span className="absolute text-[11px] font-extrabold text-[#44634B] dark:text-[#ADCFB1]">
+              {progressPct}%
+            </span>
+          </div>
+        </div>
 
-                    {/* Category Badge */}
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${isGovt
-                          ? 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1] dark:bg-[#1A2E1F] dark:text-[#AECDB2] dark:border-[#2D4A33]'
-                          : 'bg-[#FFF0E6] text-[#8A3510] border-[#FCDCCB] dark:bg-[#2D2422] dark:text-[#F8BCA0] dark:border-[#543830]'
-                        }`}
-                    >
-                      {isGovt ? (
-                        <>
-                          <Building2 className="w-3 h-3 text-[#2E6836]" />
-                          <span>WB Govt • Free</span>
-                        </>
-                      ) : (
-                        <>
-                          <Syringe className="w-3 h-3 text-[#E2765A]" />
-                          <span>Private Only • Must Buy</span>
-                        </>
-                      )}
-                    </span>
+        {/* Soft reassurance note */}
+        <div className="flex items-center gap-2 bg-[#F1F4F0] dark:bg-[#161C17] px-3.5 py-2.5 rounded-2xl">
+          <CheckCircle2 className="w-4 h-4 text-[#44634B] dark:text-[#ADCFB1] shrink-0" />
+          <p className="text-xs text-[#424842] dark:text-[#A8A29E]">
+            Child is tracking right on target with standard CDC & IAP clinical guidelines.
+          </p>
+        </div>
 
-                    {/* Cost Badge */}
-                    {isGovt ? (
-                      <span className="text-[10px] font-semibold text-[#23522A] dark:text-[#AECDB2] px-2 py-0.5 rounded-full border border-[#CFE2D1] dark:border-[#2D4A33] bg-[#EDF5EE] dark:bg-[#1A2E1F]">
-                        ₹0 Free
-                      </span>
-                    ) : vax.costInr ? (
-                      <span className="text-[11px] font-semibold text-[#8A3510] dark:text-[#F8BCA0] px-2 py-0.5 rounded-full border border-[#FCDCCB] dark:border-[#543830] bg-[#FFF0E6] dark:bg-[#2D2422]">
-                        ~₹{vax.costInr.toLocaleString('en-IN')}
-                      </span>
-                    ) : null}
+        {/* Segmented Tab Pills Filter */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1">
+          {[
+            { id: 'all' as const, label: `All (${vaccines.length})` },
+            { id: 'essential' as const, label: `Essential (${vaccines.filter((v) => v.category === 'government').length})` },
+            { id: 'optional' as const, label: `Optional (${vaccines.filter((v) => v.category === 'private').length})` },
+            { id: 'upcoming' as const, label: `Upcoming (${vaccines.filter((v) => v.status !== 'given').length})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFilter(tab.id)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                filter === tab.id
+                  ? 'bg-[#44634B] text-white shadow-xs'
+                  : 'bg-[#F1F4F0] dark:bg-[#202822] text-[#424842] dark:text-[#9E9892] hover:bg-[#E6E9E4]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-                  </div>
+      {/* 3. Timeline Stream with Milestone Blocks (Stitch Component) */}
+      <div className="space-y-4 pt-1">
+        {Object.entries(groupedMilestones).map(([ageGroup, doses]) => {
+          const isGroupCompleted = doses.every((d) => d.status === 'given');
 
-                  {/* Status Indicator */}
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${isGiven
-                        ? 'bg-[#EDF5EE] text-[#23522A] border-[#CFE2D1] dark:bg-[#1A2E1F] dark:text-[#AECDB2] dark:border-[#2D4A33]'
-                        : isOverdue
-                          ? 'bg-[#FDF0F2] text-[#8A2338] border-[#F8D0D6] dark:bg-[#2B171A] dark:text-[#F1ABB6] dark:border-[#4D2329]'
-                          : 'bg-[#FDF6E2] text-[#6E4D05] border-[#F6E6B8] dark:bg-[#292416] dark:text-[#EECD85] dark:border-[#42371E]'
-                      }`}
-                  >
-                    {isGiven ? (
-                      <>
-                        <Check className="w-3 h-3 stroke-[2.5]" />
-                        <span>Administered</span>
-                      </>
-                    ) : isOverdue ? (
-                      <>
-                        <AlertCircle className="w-3 h-3" />
-                        <span>Overdue</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3 h-3" />
-                        <span>Upcoming</span>
-                      </>
-                    )}
+          return (
+            <div key={ageGroup} className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      isGroupCompleted ? 'bg-[#44634B]' : 'bg-[#FFDDAE]'
+                    }`}
+                  />
+                  <span className="text-xs font-bold text-[#191C1A] dark:text-[#FAF8F5]">
+                    {ageGroup} • {isGroupCompleted ? 'Completed' : 'Upcoming'}
                   </span>
                 </div>
-
-                {/* Title & Diseases */}
-                <div>
-                  <h4 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5]">
-                    {vax.name}
-                  </h4>
-                  <p className="text-xs text-[#75706B] dark:text-[#9E9892] mt-0.5">
-                    Protects against: <span className="text-[#4D4845] dark:text-[#DDD8D0] font-medium">{vax.targetDiseases}</span>
-                  </p>
-                </div>
-
-                {/* Due Date & Brand Details */}
-                <div className="grid grid-cols-2 gap-2 text-xs py-2.5 px-3 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33]">
-                  <div>
-                    <span className="text-[#75706B] dark:text-[#9E9892] block text-[10px] uppercase font-medium">Due Age</span>
-                    <span className="font-semibold text-[#201E1D] dark:text-[#FAF8F5]">{vax.ageDueDisplay}</span>
-                  </div>
-                  <div>
-                    <span className="text-[#75706B] dark:text-[#9E9892] block text-[10px] uppercase font-medium">Due Date</span>
-                    <span className="font-semibold text-[#201E1D] dark:text-[#FAF8F5]">
-                      {new Date(vax.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                  {vax.brandName && (
-                    <div className="col-span-2 border-t border-[#EAE6DF] dark:border-[#2D2B33] pt-1.5 flex items-center justify-between">
-                      <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] uppercase font-medium">Brand:</span>
-                      <span className="text-[#201E1D] dark:text-[#FAF8F5] font-medium truncate max-w-[200px]">{vax.brandName}</span>
-                    </div>
-                  )}
-                  {vax.dateAdministered && (
-                    <div className="col-span-2 flex items-center justify-between">
-                      <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] uppercase font-medium">Administered:</span>
-                      <span className="text-[#23522A] dark:text-[#AECDB2] font-semibold">{vax.dateAdministered}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Notes / Advice */}
-                {vax.notes && (
-                  <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] leading-relaxed bg-[#FAF8F5]/60 dark:bg-[#18171C]/60 p-2 rounded-lg border border-[#EAE6DF]/60 dark:border-[#2D2B33]/60">
-                    {vax.notes}
-                  </p>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-0.5">
-                  {vax.receiptUrl ? (
-                    <a
-                      href={vax.receiptUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-[#E2765A] hover:underline font-semibold"
-                    >
-                      <Receipt className="w-3.5 h-3.5" />
-                      <span>View Bill</span>
-                    </a>
-                  ) : (
-                    <span />
-                  )}
-
-                  {userRole === 'parent' && (
-                    <button
-                      onClick={() => setEditingVaccine(vax)}
-                      className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#E2765A] hover:bg-[#CB6145] text-white shadow-xs transition-colors duration-150 active:scale-[0.98]"
-                    >
-                      <span>{isGiven ? 'Edit Log' : 'Record Dose'}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
+                <span className="text-[11px] font-semibold text-[#424842] dark:text-[#9E9892]">
+                  {doses.length} {doses.length === 1 ? 'dose' : 'doses'}
+                </span>
               </div>
-            );
-          })
-        )}
+
+              {/* Vaccine Cards */}
+              <div className="space-y-2">
+                {doses.map((dose) => {
+                  const isGiven = dose.status === 'given';
+
+                  return (
+                    <div
+                      key={dose.id}
+                      className="bg-white dark:bg-[#1E2520] rounded-[24px] p-4 shadow-2xs border border-[#E8E4DC] dark:border-[#2D382F] space-y-2.5 card-interactive"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5] leading-snug">
+                            {dose.name}
+                          </h4>
+                          <p className="text-[11px] text-[#424842] dark:text-[#9E9892] mt-0.5 truncate">
+                            {dose.targetDiseases}
+                          </p>
+                        </div>
+
+                        {isGiven ? (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C8EBCC] dark:bg-[#203D24] text-[#03210E] dark:text-[#ADCFB1] text-[10.5px] font-bold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Given</span>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FFDDAE] dark:bg-[#3D2C12] text-[#281800] dark:text-[#F8BC58] text-[10.5px] font-bold">
+                            Due soon
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1 border-t border-[#E8E4DC]/50 dark:border-[#2D382F]/50">
+                        <button
+                          type="button"
+                          onClick={() => setEditingVaccine(dose)}
+                          className="flex-1 py-1.5 px-3 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#191C1A] dark:text-[#FAF8F5] text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#E6E9E4] transition-colors cursor-pointer"
+                        >
+                          <Info className="w-3.5 h-3.5 text-[#424842]" />
+                          <span>Pre-check Info</span>
+                        </button>
+
+                        {!isGiven ? (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickMarkGiven(dose.id, dose.name)}
+                            className="flex-1 py-1.5 px-3 rounded-full bg-[#44634B] hover:bg-[#344738] text-white text-xs font-semibold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Log Dose</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setEditingVaccine(dose)}
+                            className="py-1.5 px-3 rounded-full text-xs font-semibold text-[#44634B] hover:underline"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* --- EDIT / RECORD VACCINE MODAL (Mobile Bottom-Sheet & Desktop Centered) --- */}
+      {/* 4. Edit Vaccine Modal */}
       {editingVaccine && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border-t sm:border border-[#EAE6DF] dark:border-[#2D2B33] p-5 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
-            {/* Mobile Sheet Drag Pill */}
-            <div className="sm:hidden w-10 h-1 rounded-full bg-[#D5CFCE] dark:bg-[#3D3B44] mx-auto mb-3" />
-
-            <h3 className="text-sm sm:text-base font-bold text-[#201E1D] dark:text-[#FAF8F5] mb-1">
-              Record Vaccine: {editingVaccine.name}
-            </h3>
-            <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">
-              {editingVaccine.category === 'government'
-                ? 'Free WB Government UIP dose at Health Centre / Hospital.'
-                : 'Private clinic out-of-pocket dose.'}
-            </p>
-
-            <form onSubmit={handleSaveModal} className="space-y-3.5 text-xs">
-
-              {/* Status Selector */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm bg-white dark:bg-[#1E2520] rounded-[28px] border border-[#E8E4DC] dark:border-[#2D382F] p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[#E8E4DC] dark:border-[#2D382F] pb-3">
               <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Status</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['given', 'upcoming', 'overdue'] as const).map((st) => (
-                    <button
-                      type="button"
-                      key={st}
-                      onClick={() =>
-                        setEditingVaccine({
-                          ...editingVaccine,
-                          status: st,
-                          dateAdministered:
-                            st === 'given' && !editingVaccine.dateAdministered
-                              ? new Date().toISOString().split('T')[0]
-                              : editingVaccine.dateAdministered,
-                        })
-                      }
-                      className={`py-2 px-2.5 rounded-xl border capitalize text-xs font-semibold transition-colors duration-150 ${editingVaccine.status === st
-                          ? 'bg-[#E2765A] text-white border-[#E2765A] shadow-xs'
-                          : 'bg-[#FAF8F5] dark:bg-[#17161B] border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892]'
-                        }`}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
+                <h3 className="font-bold text-sm text-[#191C1A] dark:text-[#FAF8F5]">
+                  {editingVaccine.name}
+                </h3>
+                <p className="text-[11px] text-[#424842] dark:text-[#9E9892]">
+                  {editingVaccine.targetDiseases}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingVaccine(null)}
+                className="p-1 text-stone-400 hover:text-stone-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModal} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-[#424842] dark:text-[#9E9892]">Immunization Status</label>
+                <select
+                  value={editingVaccine.status}
+                  onChange={(e) => setEditingVaccine({ ...editingVaccine, status: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F] font-semibold"
+                >
+                  <option value="upcoming">Upcoming</option>
+                  <option value="given">Given / Administered</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="skipped">Skipped</option>
+                </select>
               </div>
 
-              {/* Date Administered */}
               <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Date Administered</label>
+                <label className="block font-semibold mb-1 text-[#424842] dark:text-[#9E9892]">Date Administered</label>
                 <input
                   type="date"
                   value={editingVaccine.dateAdministered || ''}
                   onChange={(e) => setEditingVaccine({ ...editingVaccine, dateAdministered: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F]"
                 />
               </div>
 
-              {/* Brand & Batch */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Brand / Manufacturer</label>
-                  <input
-                    type="text"
-                    value={editingVaccine.brandName || ''}
-                    placeholder="e.g. FluQuadri, Typbar"
-                    onChange={(e) => setEditingVaccine({ ...editingVaccine, brandName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Batch Number</label>
-                  <input
-                    type="text"
-                    value={editingVaccine.batchNumber || ''}
-                    placeholder="BATCH-782"
-                    onChange={(e) => setEditingVaccine({ ...editingVaccine, batchNumber: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                  />
-                </div>
-              </div>
-
-              {/* Clinic & Cost */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Clinic / Hospital</label>
-                  <input
-                    type="text"
-                    value={editingVaccine.clinicName || ''}
-                    placeholder={editingVaccine.category === 'government' ? 'Local Swasthya Kendra / Hospital' : 'Private Clinic name'}
-                    onChange={(e) => setEditingVaccine({ ...editingVaccine, clinicName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Cost in ₹</label>
-                  <input
-                    type="number"
-                    value={editingVaccine.costInr !== undefined ? editingVaccine.costInr : ''}
-                    placeholder="0"
-                    onChange={(e) => setEditingVaccine({ ...editingVaccine, costInr: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                  />
-                </div>
-              </div>
-
-              {/* Bill / Receipt Photo Upload */}
               <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Receipt / Immunization Card Photo</label>
-                <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#DDD8D0] dark:border-[#3D2C28] bg-[#FAF8F5] dark:bg-[#17161B] text-[#75706B] dark:text-[#9E9892] cursor-pointer hover:bg-[#F2ECE3] transition-colors duration-150">
-                  <Upload className="w-3.5 h-3.5 text-[#E2765A]" />
-                  <span>{editingVaccine.receiptUrl ? 'Bill Attached (Click to Replace)' : 'Attach Bill / Govt Card Photo'}</span>
-                  <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
-                </label>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Doctor / Post-Shot Notes</label>
-                <textarea
-                  rows={2}
-                  value={editingVaccine.notes || ''}
-                  placeholder="Notes, mild fever, paracetamol advice..."
-                  onChange={(e) => setEditingVaccine({ ...editingVaccine, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                <label className="block font-semibold mb-1 text-[#424842] dark:text-[#9E9892]">Clinic / Doctor Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Dr. Morrison (City Pediatrics)"
+                  value={editingVaccine.clinicName || ''}
+                  onChange={(e) => setEditingVaccine({ ...editingVaccine, clinicName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F]"
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div>
+                <label className="block font-semibold mb-1 text-[#424842] dark:text-[#9E9892]">Vaccine Brand / Batch No.</label>
+                <input
+                  type="text"
+                  placeholder="e.g. GSK Priorix • Batch #89A2"
+                  value={editingVaccine.batchNumber || ''}
+                  onChange={(e) => setEditingVaccine({ ...editingVaccine, batchNumber: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E8E4DC] dark:border-[#2D382F]"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingVaccine(null)}
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150"
+                  className="flex-1 py-2.5 rounded-full border border-stone-200 font-semibold text-stone-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold bg-[#E2765A] text-white hover:bg-[#CB6145] transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 py-2.5 rounded-full bg-[#44634B] hover:bg-[#344738] text-white font-semibold shadow-xs"
                 >
-                  Save Record
+                  Save Changes
                 </button>
               </div>
             </form>

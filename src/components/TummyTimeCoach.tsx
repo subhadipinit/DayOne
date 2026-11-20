@@ -372,23 +372,23 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
     <div className="space-y-6 animate-in fade-in duration-150">
 
       {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-[#E2765A]/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+      <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#F1F4F0] via-[#ECEFEA] to-[#E6E9E4] dark:from-[#1E2520] dark:via-[#191F1A] dark:to-[#161B17] border border-[#E0E3DF] dark:border-[#2D382F] flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-[#E2765A] text-white">
+            <span className="p-1.5 rounded-xl bg-[#44634B] text-white">
               <Sparkles className="w-4 h-4" />
             </span>
-            <h2 className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+            <h2 className="text-lg sm:text-xl font-bold text-[#191C1A] dark:text-[#FAF8F5]">
               Tummy Time Coach & Sensory Play
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-[#75706B] dark:text-[#9E9892] max-w-xl">
+          <p className="text-xs sm:text-sm text-[#424842] dark:text-[#9E9892] max-w-xl">
             Builds head control, shoulder strength, and prevents flat head syndrome (plagiocephaly). Pair with high-contrast newborn visual cards to keep baby delighted.
           </p>
         </div>
 
         {/* Daily Goal Gauge */}
-        <div className="flex items-center gap-4 bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs shrink-0">
+        <div className="flex items-center gap-4 bg-white dark:bg-[#1D1C22] p-3.5 rounded-2xl border border-[#E8E4DC] dark:border-[#2D382F] shadow-xs shrink-0">
           <div className="relative w-14 h-14 flex items-center justify-center">
             <svg className="w-14 h-14 transform -rotate-90">
               <circle
@@ -398,7 +398,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                 stroke="currentColor"
                 strokeWidth="5"
                 fill="transparent"
-                className="text-[#EAE6DF] dark:text-[#2D2B33]"
+                className="text-[#E6E9E4] dark:text-[#2D382F]"
               />
               <circle
                 cx="28"
@@ -410,22 +410,22 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                 strokeDasharray={2 * Math.PI * 22}
                 strokeDashoffset={2 * Math.PI * 22 * (1 - progressPercent / 100)}
                 strokeLinecap="round"
-                className="text-[#E2765A] transition-all duration-500"
+                className="text-[#44634B] transition-all duration-500"
               />
             </svg>
-            <span className="absolute text-[11px] font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+            <span className="absolute text-[11px] font-bold text-[#191C1A] dark:text-[#FAF8F5]">
               {progressPercent}%
             </span>
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
+            <div className="text-[10px] font-semibold text-[#424842] dark:text-[#9E9892] uppercase tracking-wider">
               Today's Progress
             </div>
-            <div className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
+            <div className="text-sm font-bold text-[#191C1A] dark:text-[#FAF8F5]">
               {Math.floor(todayTotalSeconds / 60)}m / {dailyGoalMinutes}m
             </div>
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="text-[10px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
               {todaysSessions.length} {todaysSessions.length === 1 ? 'session' : 'sessions'} logged today
             </div>
           </div>
@@ -445,7 +445,7 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
               </h3>
 
               {/* Target Preset Selector */}
-              <div className="flex items-center gap-1 bg-[#FAF8F5] dark:bg-[#141317] p-1 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33]">
+              <div className="flex items-center gap-1 bg-[#F1F4F0] dark:bg-[#161C17] p-1 rounded-full border border-[#E0E3DF] dark:border-[#2D382F]">
                 {[
                   { label: '2m', secs: 120 },
                   { label: '3m', secs: 180 },
@@ -455,9 +455,9 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
                   <button
                     key={p.label}
                     onClick={() => setTargetPresetSeconds(p.secs)}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all ${targetPresetSeconds === p.secs
-                      ? 'bg-[#E2765A] text-white shadow-xs'
-                      : 'text-[#75706B] dark:text-[#9E9892] hover:text-[#201E1D] dark:hover:text-white'
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${targetPresetSeconds === p.secs
+                      ? 'bg-[#44634B] text-white shadow-xs'
+                      : 'text-[#424842] dark:text-[#9E9892] hover:text-[#191C1A]'
                       }`}
                   >
                     {p.label}
@@ -467,18 +467,18 @@ export const TummyTimeCoach: React.FC<TummyTimeCoachProps> = ({
             </div>
 
             {/* Large Digital Counter */}
-            <div className="py-8 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-center relative overflow-hidden">
-              <div className="text-5xl sm:text-6xl font-black font-mono tracking-tight text-[#201E1D] dark:text-[#FAF8F5]">
+            <div className="py-8 rounded-2xl bg-[#F7FAF5] dark:bg-[#161C17] border border-[#E0E3DF] dark:border-[#2D382F] text-center relative overflow-hidden">
+              <div className="text-5xl sm:text-6xl font-black font-mono tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
                 {formatTime(secondsElapsed)}
               </div>
-              <p className="text-[11px] text-[#75706B] dark:text-[#9E9892] mt-1.5">
+              <p className="text-[11px] text-[#424842] dark:text-[#9E9892] mt-1.5">
                 Target: {formatTime(targetPresetSeconds)} • {isRunning ? '⏱️ Timing in progress...' : 'Ready'}
               </p>
 
               {/* Progress bar under counter */}
-              <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#EAE6DF] dark:bg-[#2D2B33]">
+              <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#E6E9E4] dark:border-[#2D382F]">
                 <div
-                  className="h-full bg-[#E2765A] transition-all duration-300"
+                  className="h-full bg-[#44634B] transition-all duration-300"
                   style={{
                     width: `${Math.min(100, (secondsElapsed / targetPresetSeconds) * 100)}%`,
                   }}

@@ -20,10 +20,106 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tabular-nums";
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Stitch Nurturing Daylight Keyframes & Styles */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(68, 99, 75, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(68, 99, 75, 0);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes sunHalo {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(254, 149, 114, 0.45);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px 4px rgba(254, 149, 114, 0.25);
+  }
+}
+
+@keyframes shimmerGleam {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fillProgress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 83%;
+  }
+}
+
+.animate-reveal {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pill-shimmer {
+  background: linear-gradient(90deg, rgba(200, 235, 204, 0.6) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(200, 235, 204, 0.6) 100%);
+  background-size: 200% 100%;
+  animation: shimmerGleam 4s infinite linear;
+}
+
+.tummy-bar-animate {
+  animation: fillProgress 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+}
+
+.sun-badge-pulse {
+  animation: sunHalo 2.8s infinite ease-in-out;
+}
+
+.status-dot-pulse {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.tap-spring {
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.tap-spring:hover {
+  transform: translateY(-2px);
+}
+.tap-spring:active {
+  transform: scale(0.95) translateY(0);
+}
+
+.card-interactive {
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px -4px rgba(25, 28, 26, 0.08);
+}
+.card-interactive:active {
+  transform: scale(0.98);
 }
 
 /* Fast tap response on touch devices (eliminates 300ms click delay) */

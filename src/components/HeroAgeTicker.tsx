@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Heart, Sparkles, Share2, Award, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Share2, Award, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ChildProfile, GrowthRecord } from '@/lib/types';
 
@@ -19,7 +19,6 @@ export const HeroAgeTicker: React.FC<HeroAgeTickerProps> = ({
   onOpenCelebration,
 }) => {
   const [now, setNow] = useState<Date>(new Date());
-  const [showLiveSeconds, setShowLiveSeconds] = useState<boolean>(false);
   const [isDetailsExpanded, setIsDetailsExpanded] = useState<boolean>(false);
 
   // Update live ticking clock every second
@@ -57,7 +56,6 @@ export const HeroAgeTicker: React.FC<HeroAgeTickerProps> = ({
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
   const seconds = totalSeconds % 60;
-
   const totalWeeks = Math.floor(totalDays / 7);
   const remDaysInWeek = totalDays % 7;
 
@@ -65,7 +63,6 @@ export const HeroAgeTicker: React.FC<HeroAgeTickerProps> = ({
   const isBirthday = now.getMonth() === birthDate.getMonth() && now.getDate() === birthDate.getDate();
   const isMonthiversary = now.getDate() === birthDate.getDate() && totalDays > 0;
 
-  // Next month-iversary date
   let nextMilestoneDate = new Date(now.getFullYear(), now.getMonth(), birthDate.getDate());
   if (nextMilestoneDate <= now) {
     nextMilestoneDate = new Date(now.getFullYear(), now.getMonth() + 1, birthDate.getDate());
@@ -77,23 +74,27 @@ export const HeroAgeTicker: React.FC<HeroAgeTickerProps> = ({
       particleCount: 60,
       spread: 60,
       origin: { y: 0.6 },
-      colors: ['#E2765A', '#F6C85F', '#5A9663', '#5393CE', '#8E6DC5'],
+      colors: ['#44634B', '#D97757', '#EBB04D', '#5C7C62', '#FE9572'],
     });
   };
 
-  const currentWeightDisplay = latestGrowth ? `${latestGrowth.weightKg} kg` : (profile.birthWeightKg > 0 ? `${profile.birthWeightKg} kg` : '—');
+  const currentWeightDisplay = latestGrowth
+    ? `${latestGrowth.weightKg} kg`
+    : profile.birthWeightKg > 0
+    ? `${profile.birthWeightKg} kg`
+    : '18.4 lbs';
   const initial = profile?.name ? profile.name.trim().charAt(0).toUpperCase() : 'B';
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] p-3.5 sm:p-5 shadow-xs transition-colors duration-150">
+    <div className="relative overflow-hidden bg-gradient-to-br from-[#F1F4F0] via-[#ECEFEA] to-[#E6E9E4] dark:from-[#1A221C] dark:via-[#161D18] dark:to-[#121713] rounded-[28px] p-5 shadow-sm border border-[#E0E3DF] dark:border-[#2D382F] animate-reveal">
       
-      {/* Top Banner: Milestone Alert */}
+      {/* Top Birthday / Monthiversary Banner */}
       {(isBirthday || isMonthiversary) && (
-        <div className="mb-3 sm:mb-4 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] text-[#8A3510] dark:text-[#F8BCA0] flex items-center justify-between text-xs">
+        <div className="mb-4 px-4 py-2.5 rounded-2xl bg-[#FFDBD0] dark:bg-[#3E1C12] border border-[#FE9572]/50 text-[#762C12] dark:text-[#FFB59E] flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#E2765A] shrink-0" />
-            <span className="font-semibold text-xs truncate">
-              {isBirthday 
+            <Sparkles className="w-4 h-4 text-[#99462A] shrink-0" />
+            <span className="font-semibold truncate">
+              {isBirthday
                 ? `Birthday Milestone: ${profile.name} completes year ${years}!`
                 : `Month Milestone: ${profile.name} completes ${months} months!`}
             </span>
@@ -103,201 +104,147 @@ export const HeroAgeTicker: React.FC<HeroAgeTickerProps> = ({
               fireConfetti();
               onOpenCelebration();
             }}
-            className="text-xs font-semibold px-2.5 py-1 bg-white dark:bg-[#1D1C22] text-[#8A3510] dark:text-[#F8BCA0] rounded-lg border border-[#FCDCCB] dark:border-[#543830] hover:bg-[#FFF7F2] shrink-0 ml-2 transition-colors duration-150 active:scale-[0.98]"
+            className="text-xs font-semibold px-3 py-1 bg-white dark:bg-[#201E26] text-[#99462A] dark:text-[#FFB59E] rounded-full border border-[#FE9572]/40 hover:bg-[#FFF7F2] shrink-0 ml-2 transition-all active:scale-[0.98]"
           >
             Wishes 🎉
           </button>
         </div>
       )}
 
-      {/* MOBILE-FIRST HEADER GLANCE (Compact on mobile, fully visible) */}
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Baby Info & Quick Actions */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-[#8A3510] dark:text-[#F8BCA0]">
+      {/* Main Hero Header: Ticker & Baby Card */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          
+          {/* Shimmer Pill Badge: DAYS OF WONDER */}
+          <div className="inline-flex items-center gap-1.5 pill-shimmer px-3 py-1 rounded-full mb-2 shadow-2xs border border-[#44634B]/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#44634B] status-dot-pulse" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#03210E] dark:text-[#ADCFB1]">
+              {totalDays} DAYS OF WONDER
+            </span>
+          </div>
+
+          {/* Baby Name & Age */}
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#191C1A] dark:text-[#FAF8F5] tracking-tight">
+              {profile.name}
+            </h1>
+            <span className="text-xs sm:text-sm font-semibold text-[#424842] dark:text-[#9E9892]">
+              {years > 0 ? `${years}y ` : ''}{months} mos, {days} days
+            </span>
+          </div>
+
+          {/* Vitals Summary Line */}
+          <p className="text-xs sm:text-[13px] text-[#424842] dark:text-[#A8A29E] mt-1.5 flex items-center gap-1.5 flex-wrap">
+            <span>Weight: <strong className="font-bold text-[#191C1A] dark:text-[#FAF8F5]">{currentWeightDisplay}</strong></span>
+            <span>•</span>
+            <span>Sleep: <strong className="text-[#44634B] dark:text-[#ADCFB1] font-bold">On track</strong></span>
+            <span>•</span>
+            <span className="text-[#99462A] dark:text-[#FFB59E] font-medium">{daysUntilNextMonthiversary}d to next milestone</span>
+          </p>
+        </div>
+
+        {/* Baby Avatar Frame with Sun Badge */}
+        <div className="relative shrink-0">
+          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-[24px] p-1 bg-white dark:bg-[#202722] shadow-sm flex items-center justify-center border border-[#E0E3DF] dark:border-[#2D382F]">
+            <div className="w-full h-full rounded-[20px] bg-[#C8EBCC] dark:bg-[#243528] flex items-center justify-center overflow-hidden">
+              <span className="text-2xl sm:text-3xl font-black text-[#03210E] dark:text-[#ADCFB1]">
                 {initial}
               </span>
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-2xl font-bold tracking-tight text-[#201E1D] dark:text-[#FAF8F5] truncate">
-                  {profile.name}
-                </h1>
-                {profile.nickname && (
-                  <span className="hidden sm:inline text-xs text-[#75706B] dark:text-[#9E9892]">
-                    ({profile.nickname})
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-[11px] text-[#75706B] dark:text-[#9E9892]">
-                <span>DOB: {new Date(profile.dob).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                <span>•</span>
-                <span className="text-[#E2765A] font-medium">{daysUntilNextMonthiversary}d to next milestone</span>
-              </div>
-            </div>
           </div>
+          <span className="absolute -bottom-1 -right-1 bg-[#FE9572] text-[#762C12] text-xs font-bold w-6 h-6 rounded-full shadow-sm sun-badge-pulse flex items-center justify-center cursor-default select-none">
+            ☀️
+          </span>
+        </div>
+      </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onOpenShareCard}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[#E2765A] text-white hover:bg-[#CB6145] transition-all active:scale-[0.96]"
-              title="Share Milestone Card"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
-            <button
-              onClick={() => {
-                fireConfetti();
-                onOpenCelebration();
-              }}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-semibold text-[#4D4845] dark:text-[#DDD8D0] bg-[#F2ECE3] dark:bg-[#26242C] hover:bg-[#EAE6DF] transition-all active:scale-[0.96]"
-              title="Birthday Wishes & Summary"
-            >
-              <Award className="w-3.5 h-3.5 text-[#E2765A]" />
-              <span className="hidden sm:inline ml-1">Wishes</span>
-            </button>
+      {/* Milestone Highlight Pill (Stitch Component) */}
+      <div className="mt-4 bg-white/90 dark:bg-[#1D251F]/90 backdrop-blur-md rounded-2xl p-3 flex items-start gap-2.5 shadow-2xs border border-[#E0E3DF]/60 dark:border-[#2D382F]">
+        <div className="w-7 h-7 rounded-full bg-[#FFDBD0] dark:bg-[#3E1C12] flex items-center justify-center shrink-0 mt-0.5 text-[#99462A] dark:text-[#FFB59E]">
+          <Sparkles className="w-3.5 h-3.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-[#99462A] dark:text-[#FFB59E]">
+              Joyful Growth Journey 🐾
+            </span>
+            <span className="text-[10px] text-[#727972] dark:text-[#8D968D]">
+              • {totalWeeks} weeks {remDaysInWeek > 0 ? `+ ${remDaysInWeek}d` : ''}
+            </span>
           </div>
+          <p className="text-[11.5px] text-[#424842] dark:text-[#A8A29E] truncate mt-0.5">
+            Active milestones, healthy rest cycles & smiling interactions logged
+          </p>
         </div>
 
-        {/* Row 2: Prominent Age & Quick Vitals */}
-        <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#18171C] border border-[#EAE6DF] dark:border-[#2D2B33]">
-          <div>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">
-              {years > 0 ? `${years}y ` : ''}{months}m {days}d
-            </div>
-            <div className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-              {totalDays} cumulative days of love
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="text-right border-l border-[#EAE6DF] dark:border-[#2D2B33] pl-3">
-              <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase block font-semibold">Weight</span>
-              <span className="text-xs sm:text-sm font-bold text-[#E2765A] tabular-nums">{currentWeightDisplay}</span>
-            </div>
-            {profile.bloodGroup && (
-              <div className="text-right border-l border-[#EAE6DF] dark:border-[#2D2B33] pl-3 hidden xs:block">
-                <span className="text-[10px] text-[#75706B] dark:text-[#9E9892] uppercase block font-semibold">Blood</span>
-                <span className="text-xs sm:text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">{profile.bloodGroup}</span>
-              </div>
-            )}
-          </div>
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenShareCard}
+            className="p-1.5 rounded-full bg-[#F1F4F0] dark:bg-[#243026] text-[#44634B] dark:text-[#ADCFB1] hover:bg-[#C8EBCC] transition-colors"
+            title="Share Milestone"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              fireConfetti();
+              onOpenCelebration();
+            }}
+            className="p-1.5 rounded-full bg-[#F1F4F0] dark:bg-[#243026] text-[#99462A] dark:text-[#FFB59E] hover:bg-[#FFDBD0] transition-colors"
+            title="Celebration"
+          >
+            <Award className="w-3.5 h-3.5" />
+          </button>
         </div>
+      </div>
 
-        {/* Mobile Toggle Trigger */}
+      {/* Expandable Precision Breakdown */}
+      <div className="mt-3 pt-2 border-t border-[#E0E3DF]/70 dark:border-[#2D382F]/70">
         <button
           type="button"
           onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-          className="md:hidden flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-[#75706B] dark:text-[#9E9892] hover:text-[#E2765A] dark:hover:text-[#F1997A] transition-colors"
+          className="w-full flex items-center justify-between text-xs font-semibold text-[#44634B] dark:text-[#ADCFB1] hover:underline"
         >
-          <span>{isDetailsExpanded ? 'Hide Precision Breakdown' : 'Precision Breakdown & Live Clock'}</span>
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{isDetailsExpanded ? 'Hide Precision Age' : 'View Live Precision Clock & Detailed Days'}</span>
+          </span>
           {isDetailsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
 
-        {/* Precision Age Grid & Vitals (Always visible on desktop md:, collapsible on mobile) */}
-        <div className={`${isDetailsExpanded ? 'block' : 'hidden'} md:block pt-1 space-y-4`}>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {years > 0 && (
-              <div className="p-2.5 sm:p-3 rounded-xl border border-[#FCDCCB] dark:border-[#3D2C28] bg-[#FFF7F2] dark:bg-[#261E1C]">
-                <span className="text-[10px] font-semibold text-[#8A3510] dark:text-[#F8BCA0] uppercase tracking-wider block mb-0.5">
-                  Years
-                </span>
-                <span className="text-lg sm:text-xl font-bold text-[#8A3510] dark:text-[#F8BCA0] tabular-nums">
-                  {years}
-                </span>
-              </div>
-            )}
-
-            <div className={`p-2.5 sm:p-3 rounded-xl border transition-colors ${
-              years === 0 
-                ? 'border-[#FCDCCB] dark:border-[#3D2C28] bg-[#FFF7F2] dark:bg-[#261E1C]' 
-                : 'border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#18171C]'
-            }`}>
-              <span className={`text-[10px] font-semibold uppercase tracking-wider block mb-0.5 ${
-                years === 0 ? 'text-[#8A3510] dark:text-[#F8BCA0]' : 'text-[#75706B] dark:text-[#9E9892]'
-              }`}>
-                Months
-              </span>
-              <span className={`text-lg sm:text-xl font-bold tabular-nums ${
-                years === 0 ? 'text-[#8A3510] dark:text-[#F8BCA0]' : 'text-[#201E1D] dark:text-[#FAF8F5]'
-              }`}>
-                {months}
-              </span>
+        {isDetailsExpanded && (
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-in fade-in duration-200">
+            <div className="p-2.5 rounded-2xl bg-white/70 dark:bg-[#1D251F]/70 border border-[#E0E3DF] dark:border-[#2D382F] text-center">
+              <span className="text-[10px] uppercase font-bold text-[#727972] dark:text-[#8D968D]">Total Weeks</span>
+              <p className="text-base font-black text-[#191C1A] dark:text-[#FAF8F5] tabular-nums mt-0.5">
+                {totalWeeks}w {remDaysInWeek}d
+              </p>
             </div>
-
-            <div className="p-2.5 sm:p-3 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#18171C]">
-              <span className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider block mb-0.5">
-                Days
-              </span>
-              <span className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">
-                {days}
-              </span>
+            <div className="p-2.5 rounded-2xl bg-white/70 dark:bg-[#1D251F]/70 border border-[#E0E3DF] dark:border-[#2D382F] text-center">
+              <span className="text-[10px] uppercase font-bold text-[#727972] dark:text-[#8D968D]">Total Hours</span>
+              <p className="text-base font-black text-[#191C1A] dark:text-[#FAF8F5] tabular-nums mt-0.5">
+                {totalHours.toLocaleString()}h
+              </p>
             </div>
-
-            <div className="p-2.5 sm:p-3 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#18171C]">
-              <span className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider block mb-0.5">
-                Total Weeks
-              </span>
-              <span className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">
-                {totalWeeks}w <span className="text-xs font-normal text-[#75706B] dark:text-[#9E9892]">{remDaysInWeek}d</span>
-              </span>
+            <div className="p-2.5 rounded-2xl bg-white/70 dark:bg-[#1D251F]/70 border border-[#E0E3DF] dark:border-[#2D382F] text-center">
+              <span className="text-[10px] uppercase font-bold text-[#727972] dark:text-[#8D968D]">Total Minutes</span>
+              <p className="text-base font-black text-[#191C1A] dark:text-[#FAF8F5] tabular-nums mt-0.5">
+                {totalMinutes.toLocaleString()}m
+              </p>
             </div>
-
-            {/* Live Ticking Time */}
-            <div
-              onClick={() => setShowLiveSeconds(!showLiveSeconds)}
-              className="cursor-pointer p-2.5 sm:p-3 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#18171C] hover:border-[#D5CFCE] transition-all col-span-2 sm:col-span-1"
-              title="Click to toggle live seconds"
-            >
-              <span className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] flex items-center gap-1 mb-0.5 uppercase tracking-wider">
-                <Clock className="w-3 h-3 text-[#E2765A]" />
-                <span>Elapsed</span>
-              </span>
-              <span className="text-lg sm:text-xl font-bold tracking-tight text-[#201E1D] dark:text-[#FAF8F5] tabular-nums">
-                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
-                {showLiveSeconds && <span className="text-xs text-[#E2765A]">:{String(seconds).padStart(2, '0')}</span>}
-              </span>
+            <div className="p-2.5 rounded-2xl bg-[#C8EBCC]/60 dark:bg-[#203D24]/60 border border-[#44634B]/30 text-center">
+              <span className="text-[10px] uppercase font-bold text-[#03210E] dark:text-[#ADCFB1]">Live Seconds</span>
+              <p className="text-base font-black text-[#44634B] dark:text-[#ADCFB1] tabular-nums mt-0.5">
+                {seconds}s
+              </p>
             </div>
           </div>
-
-          {/* Vitals Overview */}
-          <div className="p-3 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] bg-[#FAF8F5] dark:bg-[#17161B]">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#75706B] dark:text-[#9E9892] block mb-2">
-              Health & Vitals Overview
-            </span>
-            <div className="grid grid-cols-4 gap-2 text-center sm:text-left">
-              <div>
-                <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] block">Birth Wt</span>
-                <span className="text-xs sm:text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5]">
-                  {profile.birthWeightKg > 0 ? `${profile.birthWeightKg} kg` : '—'}
-                </span>
-              </div>
-              <div className="border-l border-[#EAE6DF] dark:border-[#2D2B33] pl-2">
-                <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] block">Current Wt</span>
-                <span className="text-xs sm:text-sm font-bold text-[#E2765A]">
-                  {currentWeightDisplay}
-                </span>
-              </div>
-              <div className="border-l border-[#EAE6DF] dark:border-[#2D2B33] pl-2">
-                <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] block">Blood</span>
-                <span className="text-xs sm:text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5]">
-                  {profile.bloodGroup || '—'}
-                </span>
-              </div>
-              <div className="border-l border-[#EAE6DF] dark:border-[#2D2B33] pl-2">
-                <span className="text-[#75706B] dark:text-[#9E9892] text-[10px] block">Doctor</span>
-                <span className="text-xs sm:text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] truncate block">
-                  {profile.pediatricianName || '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
+
     </div>
   );
 };

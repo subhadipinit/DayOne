@@ -17,6 +17,7 @@ import {
   Coffee,
   Info,
   Calendar,
+  Check,
 } from 'lucide-react';
 import { MomCareLog, ChildProfile } from '@/lib/types';
 import { syncSingleRecord } from '@/lib/syncService';
@@ -55,6 +56,8 @@ const GALACTAGOGUES = [
   },
 ];
 
+type MoodType = 'energized' | 'content' | 'sleepy' | 'overwhelmed';
+
 export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
   profile,
   userRole = 'parent',
@@ -65,20 +68,21 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
   const [waterGlasses, setWaterGlasses] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(`dayone_mom_water_${todayStr}`);
-      return saved ? parseInt(saved, 10) : 6;
+      return saved ? parseInt(saved, 10) : 9; // 9 * 250 = 2.25 L
     }
-    return 6;
+    return 9;
   });
 
-  const [moodRating, setMoodRating] = useState<number>(4);
-  const [sleepHours, setSleepHours] = useState<number>(5.5);
-  const [painLevel, setPainLevel] = useState<number>(2);
+  const [activeMood, setActiveMood] = useState<MoodType>('content');
+  const [sleepHours, setSleepHours] = useState<number>(6.5);
+  const [kegelSessions, setKegelSessions] = useState<number>(2);
+  const [painLevel, setPainLevel] = useState<number>(1);
   const [supplementsTaken, setSupplementsTaken] = useState<boolean>(true);
   const [momNotes, setMomNotes] = useState<string>('');
   const [isSavedToday, setIsSavedToday] = useState<boolean>(false);
 
   const TARGET_GLASSES = 12; // 12 glasses x 250ml = 3,000ml (3 Liters)
-  const hydrationMl = waterGlasses * 250;
+  const hydrationLiters = ((waterGlasses * 250) / 1000).toFixed(2);
   const hydrationPercent = Math.min(100, Math.round((waterGlasses / TARGET_GLASSES) * 100));
 
   const handleUpdateWater = (delta: number) => {
@@ -98,12 +102,17 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
     }
   };
 
+  const toggleKegelSession = (sessionIndex: number) => {
+    const next = kegelSessions >= sessionIndex ? sessionIndex - 1 : sessionIndex;
+    setKegelSessions(next);
+  };
+
   const handleSaveDayLog = () => {
     const log: MomCareLog = {
       id: `mom_${todayStr}`,
       date: todayStr,
       waterGlasses,
-      moodRating,
+      moodRating: activeMood === 'energized' ? 5 : activeMood === 'content' ? 4 : activeMood === 'sleepy' ? 3 : 2,
       sleepHours,
       painLevel,
       supplementsTaken,
@@ -116,12 +125,13 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
       id: `mom_${todayStr}`,
       date: todayStr,
       water_glasses: waterGlasses,
-      mood_rating: moodRating,
+      mood_rating: log.moodRating,
       sleep_hours: sleepHours,
       pain_level: painLevel,
       supplements_taken: supplementsTaken,
       notes: momNotes.trim() || null,
     });
+
     try {
       confetti({
         particleCount: 60,
@@ -135,334 +145,314 @@ export const MomCareTracker: React.FC<MomCareTrackerProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
-      
-      {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-purple-500/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-[#D97757] text-white">
-              <Heart className="w-4 h-4 fill-current" />
+    <div className="flex flex-col w-full pb-8 space-y-6">
+      {/* Top Greeting & Maternal Affirmation Header */}
+      <section className="flex flex-col gap-2 pt-1">
+        <div className="inline-flex items-center gap-1.5 self-start px-3.5 py-1 rounded-full bg-primary-fixed/60 text-on-primary-fixed-variant shadow-xs">
+          <span className="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
+          <span className="font-label-md text-label-md font-semibold">You are doing amazing, Mama</span>
+          <span className="text-[13px]">🌸</span>
+        </div>
+        <div className="flex flex-col">
+          <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold">
+            Mom Care &amp; Recovery
+          </h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Postpartum Wellness, Lactation Hydration &amp; Daily Self-Care
+          </p>
+        </div>
+      </section>
+
+      {/* Daily Maternal Wellness Bento */}
+      <section className="flex flex-col gap-4">
+        {/* Mood & Emotional Status */}
+        <div className="bg-surface-container-lowest p-5 rounded-3xl shadow-sm border border-outline-variant/30 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">spa</span>
+              <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                How are you feeling today?
+              </span>
+            </div>
+            <span className="font-label-sm text-label-sm text-primary font-semibold">
+              Daily Check-in
             </span>
-            <h2 className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              Maternal Postpartum Recovery & Care
-            </h2>
           </div>
-          <p className="text-xs sm:text-sm text-[#75706B] dark:text-[#9E9892] max-w-xl">
-            "A baby is born, and so is a mother." You are doing amazing! Track hydration, recovery vitals, and Ayurvedic nourishing nutrition.
+
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
+            {[
+              { id: 'energized', label: 'Energized ☀️' },
+              { id: 'content', label: 'Content 🌿' },
+              { id: 'sleepy', label: 'Sleepy 🥱' },
+              { id: 'overwhelmed', label: 'Overwhelmed 🌧️' },
+            ].map((mood) => {
+              const isSelected = activeMood === mood.id;
+              return (
+                <button
+                  key={mood.id}
+                  onClick={() => setActiveMood(mood.id as MoodType)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-full transition-all text-left ${
+                    isSelected
+                      ? 'bg-primary text-on-primary font-bold shadow-xs'
+                      : 'bg-surface-container-low text-on-surface hover:bg-surface-container border border-outline-variant/20'
+                  }`}
+                  type="button"
+                >
+                  <span className="font-label-md text-label-md">{mood.label}</span>
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                      isSelected ? 'bg-on-primary text-primary' : 'bg-surface-container-high text-transparent'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[12px] font-bold">check</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hydration Tracker (Lactation Hydration) */}
+        <div className="bg-surface-container-lowest p-5 rounded-3xl shadow-sm border border-outline-variant/30 flex flex-col gap-3 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[18px]">water_drop</span>
+              </div>
+              <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                Lactation Hydration
+              </span>
+            </div>
+            <span className="font-label-sm text-label-sm px-2.5 py-0.5 rounded-full bg-primary-fixed/60 text-on-primary-fixed-variant font-semibold">
+              {hydrationPercent}% of Daily Goal
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between mt-1">
+            <div>
+              <span className="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight">
+                {hydrationLiters}
+              </span>
+              <span className="font-body-md text-body-md text-on-surface-variant font-medium">
+                {' '}
+                / 3.0 Liters
+              </span>
+              <span className="font-label-sm text-label-sm text-outline block mt-0.5">
+                {waterGlasses} of {TARGET_GLASSES} glasses (250 mL each)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleUpdateWater(-1)}
+                disabled={waterGlasses === 0}
+                className="w-10 h-10 rounded-full bg-surface-container text-on-surface flex items-center justify-center active:scale-95 transition-all disabled:opacity-40"
+                type="button"
+                title="Subtract 1 glass"
+              >
+                <span className="material-symbols-outlined text-[18px]">remove</span>
+              </button>
+              <button
+                onClick={() => handleUpdateWater(1)}
+                className="h-10 px-4 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1 active:scale-95 transition-all shadow-xs font-semibold"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span>250 mL</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Water intake progress bar */}
+          <div className="w-full h-3 rounded-full bg-surface-container mt-1 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${hydrationPercent}%` }}
+            ></div>
+          </div>
+
+          <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5 pt-0.5 text-xs">
+            <span className="material-symbols-outlined text-[16px] text-primary shrink-0">info</span>
+            <span>Optimal hydration directly supports healthy breast milk volume and maternal energy.</span>
           </p>
         </div>
 
-        {/* Daily Hydration Progress Badge */}
-        <div className="bg-white dark:bg-[#1D1C22] p-4 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex items-center gap-4 shrink-0">
-          <div className="relative w-14 h-14 flex items-center justify-center">
-            <svg className="w-14 h-14 transform -rotate-90">
-              <circle
-                cx="28"
-                cy="28"
-                r="22"
-                stroke="currentColor"
-                strokeWidth="5"
-                fill="transparent"
-                className="text-blue-100 dark:text-blue-950/40"
-              />
-              <circle
-                cx="28"
-                cy="28"
-                r="22"
-                stroke="currentColor"
-                strokeWidth="5"
-                fill="transparent"
-                strokeDasharray={2 * Math.PI * 22}
-                strokeDashoffset={2 * Math.PI * 22 * (1 - hydrationPercent / 100)}
-                strokeLinecap="round"
-                className="text-blue-500 transition-all duration-500"
-              />
-            </svg>
-            <Droplets className="w-5 h-5 absolute text-blue-500" />
-          </div>
-
-          <div>
-            <div className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
-              Hydration Today
-            </div>
-            <div className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              {hydrationMl} ml / 3,000 ml
-            </div>
-            <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-              {waterGlasses} of {TARGET_GLASSES} glasses (250ml each)
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid: Hydration & Recovery Vitals */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* LEFT: Interactive Hydration Station (5 Cols) */}
-        <div className="lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-sm flex flex-col justify-between space-y-5">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
-                <Droplets className="w-4 h-4 text-blue-500" />
-                <span>Nursing Hydration Station</span>
-              </h3>
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                {hydrationPercent}% Goal
-              </span>
-            </div>
-            <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">
-              Breast milk is 87% water. Staying well-hydrated prevents postpartum headaches and keeps milk supply abundant.
-            </p>
-
-            {/* Visual Glass Tracker */}
-            <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-center space-y-3">
-              <div className="text-4xl font-black text-blue-600 dark:text-blue-400 font-mono">
-                {waterGlasses} <span className="text-sm font-sans font-medium text-[#75706B]">glasses</span>
-              </div>
-              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                {Array.from({ length: TARGET_GLASSES }).map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      const next = idx + 1;
-                      setWaterGlasses(next);
-                      localStorage.setItem(`dayone_mom_water_${todayStr}`, next.toString());
-                    }}
-                    className={`w-7 h-9 rounded-md border transition-all flex items-center justify-center ${
-                      idx < waterGlasses
-                        ? 'bg-blue-500 border-blue-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-[#141317] border-blue-200 dark:border-blue-900/40 text-blue-300'
-                    }`}
-                    title={`Glass ${idx + 1} (250ml)`}
-                  >
-                    <Droplets className="w-3.5 h-3.5 fill-current" />
-                  </button>
-                ))}
-              </div>
-
-              {/* Quick Increment Buttons */}
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button
-                  onClick={() => handleUpdateWater(-1)}
-                  disabled={waterGlasses === 0}
-                  className="p-2 rounded-xl border border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] hover:text-[#201E1D] dark:hover:text-white disabled:opacity-40"
-                  title="Remove 1 glass"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleUpdateWater(1)}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+1 Glass (250ml)</span>
-                </button>
-                <button
-                  onClick={() => handleUpdateWater(2)}
-                  className="px-3 py-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 text-blue-800 dark:text-blue-200 font-semibold text-xs transition-colors"
-                >
-                  +500ml
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Doctor Note */}
-          <div className="p-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[11px] text-[#75706B] dark:text-[#9E9892] flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <span>
-              <strong>Tip:</strong> Keep a full 1-liter bottle beside the nursing chair and take a sip every time baby latches!
-            </span>
-          </div>
-        </div>
-
-        {/* RIGHT: Maternal Daily Wellness & Recovery Vitals (7 Cols) */}
-        <div className="lg:col-span-7 p-5 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-sm space-y-4">
+        {/* Rest & Sleep Breakdown */}
+        <div className="bg-surface-container-lowest p-5 rounded-3xl shadow-sm border border-outline-variant/30 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-2">
-              <Heart className="w-4 h-4 text-rose-500 fill-current" />
-              <span>Daily Recovery & Mood Check</span>
-            </h3>
-            <span className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-              Today: {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary">
+                <span className="material-symbols-outlined text-[18px]">bedtime</span>
+              </div>
+              <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                Rest &amp; Nocturnal Recovery
+              </span>
+            </div>
+            <span className="font-label-sm text-label-sm px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-semibold">
+              Last Night
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Mood Selector */}
-            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2">
-              <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892]">
-                How are you feeling today?
+          <div className="flex items-baseline justify-between">
+            <div>
+              <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
+                {sleepHours}h
               </span>
-              <div className="flex items-center justify-between gap-1 pt-1">
-                {[
-                  { rating: 1, label: 'Exhausted', icon: Frown, color: 'text-rose-500' },
-                  { rating: 2, label: 'Low', icon: Meh, color: 'text-amber-500' },
-                  { rating: 3, label: 'Okay', icon: Smile, color: 'text-blue-500' },
-                  { rating: 4, label: 'Good', icon: Smile, color: 'text-emerald-500' },
-                  { rating: 5, label: 'Supported', icon: Sparkles, color: 'text-purple-500' },
-                ].map((m) => {
-                  const Icon = m.icon;
-                  const isSelected = moodRating === m.rating;
-                  return (
-                    <button
-                      key={m.rating}
-                      onClick={() => setMoodRating(m.rating)}
-                      className={`flex-1 p-2 rounded-xl flex flex-col items-center gap-1 border transition-all ${
-                        isSelected
-                          ? 'border-[#E2765A] bg-white dark:bg-[#1D1C22] shadow-xs scale-105'
-                          : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5 opacity-70'
-                      }`}
-                    >
-                      <Icon className={`w-5 h-5 ${m.color}`} />
-                      <span className="text-[10px] font-medium text-[#75706B] dark:text-[#9E9892]">
-                        {m.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <span className="font-body-sm text-body-sm text-on-surface-variant block text-xs">
+                Total sleep (broken nocturnal stretches)
+              </span>
             </div>
-
-            {/* Rest / Sleep Hours */}
-            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892]">
-                  Total Sleep (Across Naps)
-                </span>
-                <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                  {sleepHours} hrs
-                </span>
-              </div>
-              <input
-                type="range"
-                min="2"
-                max="10"
-                step="0.5"
-                value={sleepHours}
-                onChange={(e) => setSleepHours(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-lg appearance-none cursor-pointer accent-purple-600"
-              />
-              <p className="text-[10px] text-[#75706B] dark:text-[#9E9892]">
-                Sleep in shifts when possible; even 90-minute consolidated rest cycles restore cognitive focus.
-              </p>
+            <div className="text-right">
+              <span className="font-label-sm text-label-sm px-3 py-1 rounded-full bg-tertiary-fixed/60 text-on-tertiary-fixed font-bold inline-block">
+                Longest stretch: 3h 15m
+              </span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant block mt-1 text-xs">
+                Deep restoration: 1h 45m
+              </span>
             </div>
-
-            {/* Pain / Discomfort Score */}
-            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#75706B] dark:text-[#9E9892]">
-                  Physical Pain / Discomfort
-                </span>
-                <span className={`text-xs font-bold ${painLevel > 5 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {painLevel} / 10
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="10"
-                step="1"
-                value={painLevel}
-                onChange={(e) => setPainLevel(parseInt(e.target.value))}
-                className="w-full h-1.5 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-lg appearance-none cursor-pointer accent-rose-500"
-              />
-              <div className="flex justify-between text-[10px] text-[#75706B]">
-                <span>0 (No pain)</span>
-                <span>5 (Moderate)</span>
-                <span>10 (Severe)</span>
-              </div>
-            </div>
-
-            {/* Postnatal Supplements Checkbox */}
-            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-[#201E1D] dark:text-[#FAF8F5] flex items-center gap-1.5">
-                  <Pill className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Postnatal Supplements</span>
-                </div>
-                <div className="text-[10px] text-[#75706B] dark:text-[#9E9892]">
-                  Iron, Calcium, Vit D3
-                </div>
-              </div>
-              <button
-                onClick={() => setSupplementsTaken(!supplementsTaken)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  supplementsTaken
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-[#EAE6DF] dark:bg-[#2D2B33] text-[#75706B]'
-                }`}
-              >
-                {supplementsTaken ? '✓ Taken' : 'Not yet'}
-              </button>
-            </div>
-
           </div>
 
-          {/* Notes & Save Button */}
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="text"
-              placeholder="How are you feeling mentally or physically today?..."
-              value={momNotes}
-              onChange={(e) => setMomNotes(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-xl text-xs bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-rose-500"
-            />
+          {/* Segmented nocturnal sleep timeline visual */}
+          <div className="flex gap-1 h-3 w-full rounded-full overflow-hidden bg-surface-container mt-1">
+            <div className="bg-tertiary-container h-full rounded-full" style={{ width: '25%' }} title="Deep Sleep"></div>
+            <div className="bg-surface-container-highest h-full" style={{ width: '10%' }} title="Awake / Feeding"></div>
+            <div className="bg-primary-container h-full rounded-full" style={{ width: '45%' }} title="Core Sleep"></div>
+            <div className="bg-surface-container-highest h-full" style={{ width: '8%' }} title="Awake / Diaper"></div>
+            <div className="bg-primary-fixed-dim h-full rounded-full" style={{ width: '12%' }} title="Morning Nap"></div>
+          </div>
+          <div className="flex justify-between text-[11px] text-on-surface-variant px-0.5 font-label-sm">
+            <span>10:30 PM</span>
+            <span>2:15 AM (Feed)</span>
+            <span>5:30 AM (Diaper)</span>
+            <span>7:10 AM</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Postpartum Recovery & Pelvic Health Section */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[22px]">self_improvement</span>
+            <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+              Pelvic Floor &amp; Core Recovery
+            </h3>
+          </div>
+          <span className="font-label-sm text-label-sm px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-bold">
+            Week 6+ Safe
+          </span>
+        </div>
+
+        <div className="bg-surface-container-lowest p-5 rounded-3xl shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+          {/* Daily Kegel Reminder Widget */}
+          <div className="flex items-center justify-between pb-3 border-b border-surface-container">
+            <div>
+              <span className="font-label-lg text-label-lg text-on-surface font-bold block">
+                Daily Kegel Activations
+              </span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant text-xs">
+                {kegelSessions} of 3 sets completed today
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {[1, 2, 3].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => toggleKegelSession(num)}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xs transition-all ${
+                    kegelSessions >= num
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container text-outline hover:bg-surface-container-high'
+                  }`}
+                  title={`Session ${num}`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">check</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Daily Supplements Checkbox */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary">
+                <span className="material-symbols-outlined text-[18px]">pill</span>
+              </div>
+              <div>
+                <span className="font-label-md text-label-md text-on-surface font-bold block">
+                  Postnatal Vitamins &amp; Calcium
+                </span>
+                <span className="font-body-sm text-body-sm text-on-surface-variant text-xs">
+                  Iron, Calcium &amp; Omega-3 DHA
+                </span>
+              </div>
+            </div>
             <button
-              onClick={handleSaveDayLog}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shrink-0 active:scale-95 transition-all"
+              type="button"
+              onClick={() => setSupplementsTaken(!supplementsTaken)}
+              className={`px-3.5 py-1.5 rounded-full font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1 ${
+                supplementsTaken
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container text-on-surface-variant'
+              }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{isSavedToday ? 'Saved! ✨' : 'Save Check-in'}</span>
+              <span className="material-symbols-outlined text-[16px]">
+                {supplementsTaken ? 'check' : 'close'}
+              </span>
+              <span>{supplementsTaken ? 'Taken' : 'Not yet'}</span>
             </button>
           </div>
         </div>
+      </section>
 
-      </div>
-
-      {/* Ayurvedic & Traditional Lactation Nutrition Deck */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs space-y-4">
+      {/* Ayurvedic Nourishment & Galactagogues */}
+      <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-                Traditional Indian Lactation & Recovery Foods (Galactagogues)
-              </h3>
-              <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-                Time-honored nutritional wisdom recommended by pediatricians and Indian grandmothers.
-              </p>
-            </div>
+            <span className="material-symbols-outlined text-tertiary text-[22px]">restaurant</span>
+            <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+              Ayurvedic Healing &amp; Galactagogues
+            </h3>
           </div>
+          <span className="font-label-sm text-label-sm text-outline">Traditional Wisdom</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {GALACTAGOGUES.map((food) => (
+        <div className="space-y-3">
+          {GALACTAGOGUES.map((item, idx) => (
             <div
-              key={food.name}
-              className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] space-y-2 flex flex-col justify-between"
+              key={idx}
+              className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-xs flex flex-col gap-1.5"
             >
-              <div>
-                <div className="text-xs font-bold text-[#8A3510] dark:text-[#F8BCA0]">
-                  {food.name}
-                </div>
-                <p className="text-[11px] text-[#201E1D] dark:text-[#DDD8D0] mt-1 leading-relaxed">
-                  {food.benefit}
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary"></span>
+                <h4 className="font-label-lg text-label-lg text-on-surface font-bold">
+                  {item.name}
+                </h4>
               </div>
-
-              <div className="pt-2 border-t border-[#EAE6DF]/60 dark:border-[#2D2B33]/60 text-[10px] text-[#75706B] dark:text-[#9E9892] italic">
-                🍲 <strong>How to take:</strong> {food.prep}
+              <p className="font-body-sm text-body-sm text-on-surface-variant text-xs leading-relaxed">
+                {item.benefit}
+              </p>
+              <div className="mt-1 p-2.5 rounded-xl bg-surface-container-low text-xs text-on-surface-variant font-medium">
+                <strong>Preparation:</strong> {item.prep}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
+      {/* Save Button */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={handleSaveDayLog}
+          className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:bg-primary-container active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[20px]">
+            {isSavedToday ? 'check' : 'favorite'}
+          </span>
+          <span>{isSavedToday ? 'Saved Today’s Wellness Log!' : 'Save Mom Care Log'}</span>
+        </button>
+      </div>
     </div>
   );
 };

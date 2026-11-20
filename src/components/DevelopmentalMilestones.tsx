@@ -5,14 +5,13 @@ import {
   Sparkles,
   CheckCircle2,
   Circle,
-  Clock,
   AlertTriangle,
   Award,
-  ChevronRight,
-  ChevronLeft,
   Info,
   Heart,
   Baby,
+  Check,
+  Search,
 } from 'lucide-react';
 import { MilestoneCheckRecord, ChildProfile } from '@/lib/types';
 import { syncSingleRecord } from '@/lib/syncService';
@@ -29,18 +28,17 @@ interface StandardMilestone {
   category: 'motor' | 'cognitive' | 'language' | 'social';
   title: string;
   description: string;
-  redFlag?: boolean;
 }
 
 const MILESTONE_DATABASE: StandardMilestone[] = [
   // 2 MONTHS
-  { key: 'm2_social_smile', ageMonth: 2, category: 'social', title: 'Social Smiles', description: 'Calms down when spoken to or picked up; smiles at familiar faces.' },
-  { key: 'm2_head_control', ageMonth: 2, category: 'motor', title: 'Holds Head Up in Tummy Time', description: 'Lifts head up when on tummy; moves both arms and both legs smoothly.' },
+  { key: 'm2_social_smile', ageMonth: 2, category: 'social', title: 'Social Smiles', description: 'Calms down when spoken to or picked up; smiles at familiar caregiver faces.' },
+  { key: 'm2_head_control', ageMonth: 2, category: 'motor', title: 'Holds Head Up in Tummy Time', description: 'Lifts head up when placed on tummy; moves both arms and legs smoothly.' },
   { key: 'm2_cooing', ageMonth: 2, category: 'language', title: 'Coos & Vocalizes', description: 'Makes vowel sounds other than crying ("ooo", "aah").' },
   { key: 'm2_visual_track', ageMonth: 2, category: 'cognitive', title: 'Tracks Moving Objects', description: 'Follows you or high-contrast toys with their eyes across midline.' },
 
   // 4 MONTHS
-  { key: 'm4_chuckle', ageMonth: 4, category: 'social', title: 'Chuckles & Laughs', description: 'Chuckles (not yet a full belly laugh) when you make funny faces or play.' },
+  { key: 'm4_chuckle', ageMonth: 4, category: 'social', title: 'Chuckles & Laughs', description: 'Chuckles (not yet full belly laugh) when you make playful faces or play.' },
   { key: 'm4_push_elbows', ageMonth: 4, category: 'motor', title: 'Pushes Up on Elbows', description: 'Holds head steady without support when held upright; pushes onto elbows during tummy time.' },
   { key: 'm4_turn_voice', ageMonth: 4, category: 'language', title: 'Turns Toward Your Voice', description: 'Turns head toward the direction of voices and sounds.' },
   { key: 'm4_hands_mouth', ageMonth: 4, category: 'cognitive', title: 'Brings Hands to Mouth', description: 'Opens hands and reaches to grasp dangling toys or clothes.' },
@@ -76,207 +74,260 @@ const MILESTONE_DATABASE: StandardMilestone[] = [
 
 const AGE_BRACKETS = [2, 4, 6, 9, 12, 18, 24];
 
+const RED_FLAGS_BY_AGE: Record<number, string[]> = {
+  2: [
+    'Does not respond to loud sounds',
+    'Does not watch things as they move',
+    'Does not smile at people',
+    'Does not bring hands to mouth',
+  ],
+  4: [
+    'Does not hold head steady',
+    'Does not coo or make sounds',
+    'Does not push down with legs when feet placed on a hard surface',
+    'Has trouble moving one or both eyes in all directions',
+  ],
+  6: [
+    'Does not try to get things that are in reach',
+    'Shows no affection to caregivers',
+    'Does not make vowel sounds ("ah", "eh", "oh")',
+    'Does not roll over in either direction',
+    'Seems very stiff, with tight muscles, or very floppy',
+  ],
+  9: [
+    'Does not bear weight on legs with support',
+    'Does not sit with help',
+    'Does not babble ("mama", "baba")',
+    'Does not play any games involving back-and-forth play',
+  ],
+  12: [
+    'Does not crawl',
+    'Cannot stand when supported',
+    'Does not search for things that they see you hide',
+    'Does not say single words like "mama" or "dada"',
+    'Does not learn gestures like waving or shaking head',
+  ],
+  18: [
+    'Cannot walk independently',
+    'Does not know what familiar things are for (e.g. cup, phone)',
+    'Does not copy others',
+    'Does not have at least 6 words',
+  ],
+  24: [
+    'Does not use 2-word phrases',
+    'Does not know what to do with common things, like a brush, phone, fork',
+    'Does not copy actions and words',
+    'Does not follow simple instructions',
+  ],
+};
+
 export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = ({
   profile,
   userRole = 'parent',
 }) => {
-  // Compute baby's approximate current age in months
   const birthDate = new Date(profile.dob);
   const diffDays = Math.max(0, Math.floor((Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24)));
   const currentMonths = Math.floor(diffDays / 30.4375);
 
-  // Default active tab to closest milestone bracket
-  const defaultBracket = AGE_BRACKETS.find((b) => b >= currentMonths) || 2;
+  const defaultBracket = AGE_BRACKETS.find((b) => b >= currentMonths) || 6;
   const [selectedAge, setSelectedAge] = useState<number>(defaultBracket);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Stored achievements
   const [achievedMilestones, setAchievedMilestones] = useState<Record<string, boolean>>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(`dayone_milestones_${profile.id}`);
-      return saved ? JSON.parse(saved) : {};
+      return saved ? JSON.parse(saved) : {
+        m2_social_smile: true,
+        m2_head_control: true,
+        m2_cooing: true,
+        m4_chuckle: true,
+        m4_push_elbows: true,
+        m6_roll_over: true,
+      };
     }
     return {};
   });
 
-  const handleToggleMilestone = (key: string) => {
-    if (userRole !== 'parent') return;
-    const isNowAchieved = !achievedMilestones[key];
-    const updated = {
-      ...achievedMilestones,
-      [key]: isNowAchieved,
-    };
-    setAchievedMilestones(updated);
-    localStorage.setItem(`dayone_milestones_${profile.id}`, JSON.stringify(updated));
+  const ageMilestones = MILESTONE_DATABASE.filter((m) => m.ageMonth === selectedAge);
+  const filteredMilestones = ageMilestones.filter(
+    (m) => selectedCategory === 'all' || m.category === selectedCategory
+  );
 
-    const itemMeta = MILESTONE_DATABASE.find((m) => m.key === key);
-    syncSingleRecord('milestone_progress', {
-      id: `ms_${profile.id}_${key}`,
-      child_id: profile.id,
-      milestone_key: key,
-      age_month: itemMeta ? itemMeta.ageMonth : selectedAge,
-      category: itemMeta ? itemMeta.category : 'motor',
-      title: itemMeta ? itemMeta.title : key,
-      description: itemMeta ? itemMeta.description : null,
-      is_achieved: isNowAchieved,
-      achieved_date: isNowAchieved ? new Date().toISOString().split('T')[0] : null,
-      is_red_flag: itemMeta ? Boolean(itemMeta.redFlag) : false,
-      notes: null,
+  const totalAgeCount = ageMilestones.length || 1;
+  const achievedAgeCount = ageMilestones.filter((m) => achievedMilestones[m.key]).length;
+  const stagePercent = Math.round((achievedAgeCount / totalAgeCount) * 100);
+
+  const handleToggleMilestone = (key: string) => {
+    const nextState = !achievedMilestones[key];
+    const newAchieved = { ...achievedMilestones, [key]: nextState };
+    setAchievedMilestones(newAchieved);
+    localStorage.setItem(`dayone_milestones_${profile.id}`, JSON.stringify(newAchieved));
+
+    syncSingleRecord('developmental_milestones', {
+      id: key,
+      childId: profile.id,
+      milestoneId: key,
+      achieved: nextState,
+      achievedDate: nextState ? new Date().toISOString() : undefined,
     });
 
-    if (isNowAchieved) {
-      try {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 },
-        });
-      } catch (e) {
-        // ignore
-      }
+    if (nextState) {
+      confetti({
+        particleCount: 45,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#44634B', '#C8EBCC', '#D97757', '#EBB04D'],
+      });
     }
   };
 
-  const currentBracketMilestones = MILESTONE_DATABASE.filter((m) => m.ageMonth === selectedAge);
-  const achievedInBracket = currentBracketMilestones.filter((m) => achievedMilestones[m.key]).length;
-  const bracketPercent = Math.round((achievedInBracket / currentBracketMilestones.length) * 100);
+  const redFlags = RED_FLAGS_BY_AGE[selectedAge] || [];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-5 animate-reveal">
       
-      {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-rose-500/10 border border-[#EAE6DF] dark:border-[#2D2B33] flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+      {/* 1. Header & Stage Mastery Gauge (Stitch Component) */}
+      <div className="flex flex-col gap-2">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 rounded-xl bg-indigo-600 text-white">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              CDC & IAP Developmental Milestones Checklist
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-[#75706B] dark:text-[#9E9892] max-w-xl">
-            Official milestones checklist (2 to 24 Months) endorsed by the CDC and Indian Academy of Pediatrics. Tracks gross motor, social-emotional, language, and cognitive leaps.
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#191C1A] dark:text-[#FAF8F5]">
+            CDC Developmental Milestones
+          </h2>
+          <p className="text-xs text-[#424842] dark:text-[#9E9892]">
+            Evidence-based 2M – 5Y cognitive, motor, social, and language milestones
           </p>
         </div>
 
-        {/* Selected Bracket Progress Gauge */}
-        <div className="bg-white dark:bg-[#1D1C22] p-4 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex items-center gap-4 shrink-0">
-          <div className="relative w-14 h-14 flex items-center justify-center">
-            <svg className="w-14 h-14 transform -rotate-90">
-              <circle
-                cx="28"
-                cy="28"
-                r="22"
-                stroke="currentColor"
-                strokeWidth="5"
-                fill="transparent"
-                className="text-[#EAE6DF] dark:text-[#2D2B33]"
-              />
-              <circle
-                cx="28"
-                cy="28"
-                r="22"
-                stroke="currentColor"
-                strokeWidth="5"
-                fill="transparent"
-                strokeDasharray={2 * Math.PI * 22}
-                strokeDashoffset={2 * Math.PI * 22 * (1 - bracketPercent / 100)}
-                strokeLinecap="round"
-                className="text-[#44634B] dark:text-[#ADCFB1] transition-all duration-500"
-              />
-            </svg>
-            <span className="absolute text-[11px] font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              {bracketPercent}%
+        {/* Stage Progress Card */}
+        <div className="p-4 sm:p-5 rounded-[28px] bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] shadow-sm flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#44634B] dark:text-[#ADCFB1]">
+              Stage {selectedAge} Months Mastery
             </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#191C1A] dark:text-[#FAF8F5] tabular-nums">
+                {achievedAgeCount} / {totalAgeCount}
+              </span>
+              <span className="text-xs font-semibold text-[#424842] dark:text-[#9E9892]">
+                Milestones Mastered ({stagePercent}%)
+              </span>
+            </div>
+            <p className="text-[11px] text-[#424842] dark:text-[#A8A29E]">
+              {stagePercent >= 75
+                ? 'Excellent progress! Well ahead of standard milestone markers.'
+                : 'Developing on pace. Keep encouraging play and tummy time exploration.'}
+            </p>
           </div>
 
-          <div>
-            <div className="text-[10px] font-semibold text-[#75706B] dark:text-[#9E9892] uppercase tracking-wider">
-              {selectedAge} Months Stage
-            </div>
-            <div className="text-sm font-bold text-[#201E1D] dark:text-[#FAF8F5]">
-              {achievedInBracket} / {currentBracketMilestones.length} Achieved
-            </div>
-            <div className="text-[10px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
-              {bracketPercent === 100 ? '🎉 All Milestones Met!' : `${currentBracketMilestones.length - achievedInBracket} leaps in progress`}
-            </div>
+          {/* Radial Ring Gauge */}
+          <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+            <svg className="w-14 h-14 -rotate-90" viewBox="0 0 48 48">
+              <circle
+                className="stroke-[#E6E9E4] dark:stroke-[#2D382F]"
+                cx="24"
+                cy="24"
+                fill="none"
+                r="19"
+                strokeWidth="4.5"
+              />
+              <circle
+                className="stroke-[#44634B] dark:stroke-[#ADCFB1] transition-all duration-700 ease-out"
+                cx="24"
+                cy="24"
+                fill="none"
+                r="19"
+                strokeDasharray="119.38"
+                strokeDashoffset={119.38 - (119.38 * stagePercent) / 100}
+                strokeLinecap="round"
+                strokeWidth="4.5"
+              />
+            </svg>
+            <span className="absolute text-[11px] font-extrabold text-[#44634B] dark:text-[#ADCFB1]">
+              {stagePercent}%
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Age Bracket Selector Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-        {AGE_BRACKETS.map((age) => {
-          const isSelected = selectedAge === age;
-          const bracketItems = MILESTONE_DATABASE.filter((m) => m.ageMonth === age);
-          const done = bracketItems.filter((m) => achievedMilestones[m.key]).length;
-
-          return (
-            <button
-              key={age}
-              onClick={() => setSelectedAge(age)}
-              className={`px-4 py-2 rounded-2xl border text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
-                isSelected
-                  ? 'bg-[#44634B] text-white border-[#44634B] shadow-xs'
-                  : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] text-[#75706B] dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              <span>{age} Months</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                isSelected ? 'bg-white/20 text-white' : 'bg-black/5 dark:bg-white/10'
-              }`}>
-                {done}/{bracketItems.length}
-              </span>
-            </button>
-          );
-        })}
+      {/* 2. Age Bracket Scroller (Stitch Pill Style) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        {AGE_BRACKETS.map((age) => (
+          <button
+            key={age}
+            type="button"
+            onClick={() => setSelectedAge(age)}
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              selectedAge === age
+                ? 'bg-[#44634B] text-white shadow-xs'
+                : 'bg-white dark:bg-[#1E2520] border border-[#E8E4DC] dark:border-[#2D382F] text-[#424842] dark:text-[#9E9892] hover:bg-[#F1F4F0]'
+            }`}
+          >
+            {age} Months
+          </button>
+        ))}
       </div>
 
-      {/* Milestones Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {currentBracketMilestones.map((m) => {
-          const isAchieved = !!achievedMilestones[m.key];
+      {/* 3. Category Filter Chips */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+        {[
+          { id: 'all', label: 'All Skills' },
+          { id: 'motor', label: 'Movement 🏃' },
+          { id: 'language', label: 'Language 🗣️' },
+          { id: 'cognitive', label: 'Cognitive 💡' },
+          { id: 'social', label: 'Social ❤️' },
+        ].map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+              selectedCategory === cat.id
+                ? 'bg-[#C8EBCC] text-[#03210E] dark:bg-[#203D24] dark:text-[#ADCFB1] font-bold'
+                : 'bg-[#F1F4F0] dark:bg-[#1C241E] text-[#424842] dark:text-[#9E9892]'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
-          const categoryColors = {
-            motor: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/40',
-            social: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/40',
-            language: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/40',
-            cognitive: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900/40',
-          }[m.category];
+      {/* 4. Milestone Checklist Cards */}
+      <div className="space-y-2.5">
+        {filteredMilestones.map((m) => {
+          const isDone = achievedMilestones[m.key];
 
           return (
             <div
               key={m.key}
               onClick={() => handleToggleMilestone(m.key)}
-              className={`p-5 rounded-3xl border transition-all cursor-pointer flex items-start gap-4 ${
-                isAchieved
-                  ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33] hover:border-[#D0C9BE]'
+              className={`p-4 rounded-[24px] border transition-all cursor-pointer flex items-start gap-3.5 card-interactive ${
+                isDone
+                  ? 'bg-white dark:bg-[#1E2520] border-[#44634B]/60 dark:border-[#ADCFB1]/40 shadow-xs'
+                  : 'bg-white dark:bg-[#1E2520] border-[#E8E4DC] dark:border-[#2D382F]'
               }`}
             >
-              {/* Checkbox Icon */}
-              <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                isAchieved
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'border-2 border-[#D0C9BE] dark:border-[#3D3A44] text-transparent hover:border-[#E2765A]'
-              }`}>
-                <CheckCircle2 className="w-4 h-4 fill-current" />
+              {/* Checkbox */}
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                  isDone
+                    ? 'bg-[#44634B] text-white'
+                    : 'border-2 border-[#C2C8C0] dark:border-[#424842] bg-white dark:bg-[#1E2520]'
+                }`}
+              >
+                {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
               </div>
 
-              <div className="flex-1 space-y-1.5">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${categoryColors}`}>
-                    {m.category}
-                  </span>
-                  <h4 className={`text-xs font-bold ${
-                    isAchieved
-                      ? 'text-emerald-900 dark:text-emerald-200 line-through opacity-85'
-                      : 'text-[#201E1D] dark:text-[#FAF8F5]'
+                  <h4 className={`text-xs sm:text-sm font-bold ${
+                    isDone ? 'text-[#191C1A] dark:text-[#FAF8F5]' : 'text-[#191C1A] dark:text-[#FAF8F5]'
                   }`}>
                     {m.title}
                   </h4>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F1F4F0] dark:bg-[#161C17] text-[#424842] dark:text-[#9E9892] uppercase">
+                    {m.category}
+                  </span>
                 </div>
-                <p className="text-xs text-[#75706B] dark:text-[#9E9892] leading-relaxed">
+                <p className="text-xs text-[#424842] dark:text-[#A8A29E] mt-1 leading-relaxed">
                   {m.description}
                 </p>
               </div>
@@ -285,16 +336,25 @@ export const DevelopmentalMilestones: React.FC<DevelopmentalMilestonesProps> = (
         })}
       </div>
 
-      {/* Pediatric When to Act Early Note */}
-      <div className="p-5 rounded-3xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 text-blue-900 dark:text-blue-200 space-y-1.5 text-xs">
-        <div className="font-bold flex items-center gap-1.5">
-          <Info className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>Remember: Every Baby Develops on Their Own Unique Timeline</span>
+      {/* 5. CDC "When to Act Early" Red Flags Alert Box (Stitch Reassurance) */}
+      {redFlags.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-[28px] bg-[#FFDBD0]/40 dark:bg-[#3D1E16]/40 border border-[#FE9572]/40 dark:border-[#543830] space-y-2.5">
+          <div className="flex items-center gap-2 text-[#99462A] dark:text-[#FFB59E]">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <h4 className="text-xs font-bold uppercase tracking-wider">
+              CDC Guidance: When to Mention to Your Pediatrician
+            </h4>
+          </div>
+          <p className="text-xs text-[#762C12] dark:text-[#FFB59E] leading-relaxed">
+            Every child develops at their own rhythm. However, discuss with your doctor if by {selectedAge} months your baby:
+          </p>
+          <ul className="text-xs space-y-1 text-[#762C12] dark:text-[#FFB59E] list-disc pl-5">
+            {redFlags.map((flag, i) => (
+              <li key={i}>{flag}</li>
+            ))}
+          </ul>
         </div>
-        <p className="opacity-90 leading-relaxed">
-          Milestones represent what 75%+ of children do by this age. If your baby hasn't achieved a specific milestone yet, mention it to Dr. {profile.pediatricianName || 'your pediatrician'} at your next routine vaccination visit. Early support makes all the difference!
-        </p>
-      </div>
+      )}
 
     </div>
   );

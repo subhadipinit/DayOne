@@ -20,6 +20,10 @@ import {
   Send,
   X,
   Calculator,
+  Calendar,
+  Phone,
+  Mic,
+  Edit3,
 } from 'lucide-react';
 import {
   ChildProfile,
@@ -60,10 +64,12 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
 }) => {
   const [newQuestionText, setNewQuestionText] = useState<string>('');
   const [showSymptomModal, setShowSymptomModal] = useState<boolean>(false);
+  const [activeAnsweringId, setActiveAnsweringId] = useState<string | null>(null);
+  const [liveAnswerText, setLiveAnswerText] = useState<string>('');
 
   // Symptom form state
   const [symptomText, setSymptomText] = useState<string>('');
-  const [tempC, setTempC] = useState<string>('37.0');
+  const [tempC, setTempC] = useState<string>('37.8');
   const [medGiven, setMedGiven] = useState<string>('');
   const [symptomNotes, setSymptomNotes] = useState<string>('');
 
@@ -91,23 +97,23 @@ export const DoctorVisitVault: React.FC<DoctorVisitVaultProps> = ({
     const pendingQuestions = questions.filter((q) => !q.isAnswered).map((q) => `• ${q.question}`).join('\n');
     const givenCount = vaccines.filter((v) => v.status === 'given').length;
 
-    return `🏥 *DayOne Health Update for Dr. ${profile.pediatricianName || 'Pediatrician'}*
+    return `🏥 *DayOne Health Dossier for Dr. ${profile.pediatricianName || 'Pediatrician'}*
 
 👶 *Patient:* ${profile.name} (${ageStr}, ${profile.gender === 'male' ? 'Boy' : 'Girl'})
-⚖️ *Current Weight:* ${latestGrowth ? `${latestGrowth.weightKg} kg` : `${profile.birthWeightKg} kg (Birth)`}
-📏 *Length:* ${latestGrowth ? `${latestGrowth.lengthCm} cm` : `${profile.birthLengthCm} cm`}
-🧠 *Head Circ:* ${latestGrowth ? `${latestGrowth.headCircumferenceCm} cm` : `${profile.birthHeadCircumferenceCm} cm`}
-🩸 *Blood Group:* ${profile.bloodGroup || 'Not specified'}
+⚖️ *Current Weight:* ${latestGrowth ? `${latestGrowth.weightKg} kg` : `${profile.birthWeightKg || 3.2} kg (Birth)`}
+📏 *Length:* ${latestGrowth ? `${latestGrowth.lengthCm} cm` : `${profile.birthLengthCm || 50} cm`}
+🧠 *Head Circ:* ${latestGrowth ? `${latestGrowth.headCircumferenceCm} cm` : `${profile.birthHeadCircumferenceCm || 34} cm`}
+🩸 *Blood Group:* ${profile.bloodGroup || 'O+'}
 
 🌡️ *Recent Symptoms / Vitals:*
-${recentSymptoms || '• No active symptoms recorded (Routine wellness)'}
+${recentSymptoms || '• No active acute symptoms (Routine wellness)'}
 
-❓ *Parent Questions:*
-${pendingQuestions || '• Routine growth & immunization check'}
+❓ *Consultation Questions:*
+${pendingQuestions || '• Routine developmental milestone & growth review'}
 
-💉 *Vaccines:* ${givenCount} of ${vaccines.length} doses completed.
+💉 *Vaccines:* ${givenCount} of ${vaccines.length} completed.
 
-_Sent via DayOne Baby Health Vault_`;
+_Sent via DayOne Pediatric Vault_`;
   };
 
   const handleCopyWhatsApp = () => {
@@ -131,6 +137,16 @@ _Sent via DayOne Baby Health Vault_`;
     if (!newQuestionText.trim()) return;
     onAddQuestion(newQuestionText.trim());
     setNewQuestionText('');
+  };
+
+  const handleSaveLiveAnswer = (id: string) => {
+    if (liveAnswerText.trim()) {
+      onToggleQuestion(id, liveAnswerText.trim());
+    } else {
+      onToggleQuestion(id);
+    }
+    setActiveAnsweringId(null);
+    setLiveAnswerText('');
   };
 
   const handleSymptomSubmit = (e: React.FormEvent) => {
@@ -160,356 +176,502 @@ _Sent via DayOne Baby Health Vault_`;
     });
   };
 
+  const pendingQuestionsCount = questions.filter((q) => !q.isAnswered).length;
+
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col w-full pb-8 space-y-6">
       {/* Quick Navigation to Dose Calculator */}
       {onNavigateTab && (
-        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FFF7F2] dark:bg-[#261E1C] border border-[#FCDCCB] dark:border-[#523A34] text-xs">
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs">
           <div className="flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-[#E2765A] shrink-0" />
-            <span className="text-[#8A3510] dark:text-[#F8BCA0] font-medium">
+            <span className="material-symbols-outlined text-[18px] text-primary">calculate</span>
+            <span className="text-on-surface font-medium">
               Need weight-based medication doses or fever calculator?
             </span>
           </div>
           <button
             type="button"
             onClick={() => onNavigateTab('dose')}
-            className="px-3 py-1.5 rounded-xl bg-[#E2765A] hover:bg-[#CB6145] text-white font-semibold text-[11px] shrink-0 active:scale-[0.97] transition-all"
+            className="px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-semibold text-[11px] shrink-0 active:scale-95 transition-all shadow-xs"
           >
             Open Calculator →
           </button>
         </div>
       )}
 
-      {/* 1-Click Clinic PDF Download Banner */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] text-[#201E1D] dark:text-[#FAF8F5] flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#FFF0E6] dark:bg-[#2D2422] flex items-center justify-center text-[#E2765A]">
-              <Stethoscope className="w-4 h-4" />
-            </div>
-            <h3 className="font-semibold text-sm tracking-tight text-[#201E1D] dark:text-[#FAF8F5]">
-              Pediatric Clinic Visit Sheet
-            </h3>
+      {/* Screen Title & Action Bar */}
+      <div className="flex flex-col gap-2 pt-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm mb-1 font-semibold">
+              <span className="material-symbols-outlined text-[14px]">local_hospital</span>
+              Pediatric Portal
+            </span>
+            <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight font-bold">
+              Doctor Visit &amp; Rx Vault
+            </h1>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Pediatric records &amp; visit prep questions for {profile.name}
+            </p>
           </div>
-          <p className="text-xs text-[#75706B] dark:text-[#9E9892] max-w-xl">
-            Heading to see {profile.pediatricianName || 'the pediatrician'}? Generate a printable 1-page health summary with growth curves, vaccines, and questions.
+          <button
+            onClick={() => setShowSymptomModal(true)}
+            className="shrink-0 inline-flex items-center gap-1.5 bg-primary text-on-primary font-label-md text-label-md px-4 py-2.5 rounded-full shadow-xs hover:bg-primary-container active:scale-95 transition-all font-semibold"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">note_add</span>
+            <span>+ Symptom</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Hero Card: Upcoming Visit Reminder */}
+      <div className="rounded-3xl bg-surface-container-lowest shadow-sm p-5 border border-outline-variant/30 flex flex-col gap-4">
+        {/* Status Badge & Counter */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold">
+            <span className="material-symbols-outlined text-[15px] text-secondary">event</span>
+            Upcoming Checkup • Routine Wellness
+          </span>
+          <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            Active Patient File
+          </span>
+        </div>
+
+        {/* Main Headline */}
+        <div className="flex flex-col gap-1">
+          <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+            Pediatric Consultation &amp; Wellness Checkup
+          </h2>
+          <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
+            Recommended every 2–3 months during baby&apos;s 1st year
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setShowWhatsAppModal(true)}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors duration-150 active:scale-[0.98]"
-            title="Generate structured WhatsApp update for pediatrician"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>WhatsApp Doctor</span>
-          </button>
+        {/* Clinic & Doctor Location Tile */}
+        <div className="rounded-2xl bg-surface-container-low p-4 flex flex-col gap-3 border border-outline-variant/20">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-on-primary-fixed-variant text-[20px]">person</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-label-lg text-label-lg text-on-surface font-bold truncate">
+                  Dr. {profile.pediatricianName || 'Clara Morrison, MD'}
+                </div>
+                <div className="font-body-sm text-body-sm text-on-surface-variant truncate text-xs">
+                  Lead Pediatrician • Westside Children&apos;s Clinic
+                </div>
+              </div>
+            </div>
+            {profile.pediatricianPhone && (
+              <a
+                href={`tel:${profile.pediatricianPhone}`}
+                className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs active:scale-95 transition-all"
+                title="Call Doctor"
+              >
+                <span className="material-symbols-outlined text-[18px]">phone</span>
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm text-xs">
+            <span className="material-symbols-outlined text-[16px] text-tertiary">location_on</span>
+            <span className="truncate">Suite 304, Pediatric Care Tower • Westside Clinic</span>
+          </div>
+        </div>
 
-          <button
-            onClick={handleExportPdf}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#44634B] hover:bg-[#38533E] text-white font-semibold text-xs shadow-xs transition-colors duration-150 active:scale-[0.98]"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Download Clinic PDF</span>
-          </button>
+        {/* PDF Summary & Sharing Action Card */}
+        <div className="rounded-2xl bg-surface-container p-4 flex flex-col gap-2 border border-outline-variant/20">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[22px]">auto_stories</span>
+              <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                WHO Trajectory &amp; Growth Dossier
+              </span>
+            </div>
+            <span className="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-semibold">
+              Auto-synced
+            </span>
+          </div>
+          <p className="font-body-sm text-body-sm text-on-surface-variant text-xs leading-relaxed">
+            Pre-assembles WHO percentile curves, vaccine records, feeding volume, and active fever/symptom history for the consultation.
+          </p>
+
+          <div className="pt-2 flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleExportPdf}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-secondary text-on-secondary font-label-md text-label-md shadow-xs hover:opacity-90 active:scale-95 transition-all font-semibold"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+              <span>Generate Visit Brief (PDF)</span>
+            </button>
+            <button
+              onClick={() => setShowWhatsAppModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-xs hover:bg-primary-container active:scale-95 transition-all font-semibold"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">chat</span>
+              <span>WhatsApp Doctor</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Grid: Questions Notepad & Symptoms Log */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Questions for Doctor Notepad */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between">
+      {/* Pediatric Consultation Guide / Questions Checklist */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#FFF0E6] dark:bg-[#2D2422] flex items-center justify-center text-[#E2765A]">
-                  <HelpCircle className="w-4 h-4" />
-                </div>
-                <h4 className="font-semibold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
-                  Questions for Pediatrician ({questions.filter((q) => !q.isAnswered).length} Pending)
-                </h4>
-              </div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+                Questions for Dr. {profile.pediatricianName ? profile.pediatricianName.split(' ')[0] : 'Morrison'}
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+                {pendingQuestionsCount} pending
+              </span>
             </div>
-
-            <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">
-              Jot down questions anytime you think of them so you never forget during clinic visits.
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Check off in the room so quick 15-minute consultations miss nothing.
             </p>
+          </div>
+        </div>
 
-            {/* Questions List */}
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-              {questions.length === 0 ? (
-                <p className="text-xs text-[#75706B] italic text-center py-4">No questions saved yet.</p>
-              ) : (
-                questions.map((q) => (
-                  <div
-                    key={q.id}
-                    className={`p-3 rounded-xl border text-xs transition-all ${q.isAnswered
-                      ? 'bg-[#FAF8F5]/60 dark:bg-[#17161B]/40 border-[#EAE6DF]/60 dark:border-[#2D2B33]/60 opacity-60'
-                      : 'bg-[#FAF8F5] dark:bg-[#17161B] border-[#EAE6DF] dark:border-[#2D2B33]'
+        {/* Add Question Input */}
+        <form onSubmit={handleAddQuestionSubmit} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Type question for pediatrician (e.g. night-waking, weaning rash)..."
+            value={newQuestionText}
+            onChange={(e) => setNewQuestionText(e.target.value)}
+            className="flex-1 h-11 px-4 rounded-full bg-surface-container-lowest text-on-surface font-body-sm shadow-xs border border-outline-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-outline"
+          />
+          <button
+            type="submit"
+            className="px-4 h-11 rounded-full bg-primary text-on-primary font-label-md font-semibold shrink-0 shadow-xs active:scale-95 transition-all flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Add</span>
+          </button>
+        </form>
+
+        {/* Questions List */}
+        <div className="space-y-2.5">
+          {questions.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-surface-container-lowest text-center text-on-surface-variant font-body-sm border border-outline-variant/30">
+              No questions added yet. Type your questions above to prep for the clinic visit!
+            </div>
+          ) : (
+            questions.map((q) => {
+              const isAnswering = activeAnsweringId === q.id;
+              return (
+                <div
+                  key={q.id}
+                  className={`rounded-2xl bg-surface-container-lowest p-4 shadow-xs border border-outline-variant/30 flex flex-col gap-2 transition-all ${
+                    q.isAnswered ? 'opacity-70 bg-surface-container-low' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => onToggleQuestion(q.id)}
+                      className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                        q.isAnswered
+                          ? 'bg-primary text-on-primary'
+                          : 'bg-surface-container text-primary hover:bg-primary-fixed border border-outline-variant/40'
                       }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <button
-                        onClick={() => userRole === 'parent' && onToggleQuestion(q.id)}
-                        className="flex items-start gap-2.5 text-left flex-1"
-                      >
-                        {q.isAnswered ? (
-                          <CheckCircle2 className="w-4 h-4 text-[#5A9663] shrink-0 mt-0.5" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-[#9E9892] shrink-0 mt-0.5" />
-                        )}
-                        <div>
-                          <p className={`font-medium text-[#201E1D] dark:text-[#FAF8F5] ${q.isAnswered ? 'line-through text-[#75706B]' : ''}`}>
-                            {q.question}
-                          </p>
-                          {q.answer && (
-                            <p className="text-[11px] text-[#23522A] dark:text-[#AECDB2] font-semibold mt-1">
-                              Doctor: "{q.answer}"
-                            </p>
-                          )}
-                        </div>
-                      </button>
+                      type="button"
+                      aria-label="Toggle question status"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">check</span>
+                    </button>
 
-                      {userRole === 'parent' && (
+                    <div className="flex-1 min-w-0 flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          className={`font-label-sm text-label-sm px-2.5 py-0.5 rounded-full font-semibold ${
+                            q.isAnswered
+                              ? 'bg-surface-container text-on-surface-variant'
+                              : 'bg-secondary-fixed text-on-secondary-fixed'
+                          }`}
+                        >
+                          {q.isAnswered ? 'Answered' : 'Pending • Priority'}
+                        </span>
                         <button
                           onClick={() => onDeleteQuestion(q.id)}
-                          className="p-1 text-[#75706B] hover:text-[#CB6145] dark:hover:text-[#F1997A]"
+                          className="text-outline hover:text-error text-xs"
+                          type="button"
+                          aria-label="Delete question"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
+                      </div>
+
+                      <p
+                        className={`font-label-lg text-label-lg text-on-surface leading-snug ${
+                          q.isAnswered ? 'line-through text-outline' : 'font-medium'
+                        }`}
+                      >
+                        {q.question}
+                      </p>
+
+                      {/* Doctor's answer note */}
+                      {q.answer && (
+                        <div className="mt-1 p-2.5 rounded-xl bg-primary-fixed/30 border border-primary-fixed/40 text-on-primary-fixed-variant font-body-sm text-xs leading-relaxed">
+                          <strong>Doctor&apos;s Advice:</strong> {q.answer}
+                        </div>
+                      )}
+
+                      {/* Live recording / note area */}
+                      {!q.isAnswered && !isAnswering && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveAnsweringId(q.id);
+                            setLiveAnswerText(q.answer || '');
+                          }}
+                          className="mt-1 rounded-xl bg-surface-container-low p-2.5 flex items-center justify-between gap-2 text-left hover:bg-surface-container transition-colors"
+                        >
+                          <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5 truncate text-xs">
+                            <span className="material-symbols-outlined text-[16px] text-tertiary">edit_note</span>
+                            Tap to record doctor&apos;s answer live...
+                          </span>
+                          <span className="material-symbols-outlined text-primary text-[18px]">mic</span>
+                        </button>
+                      )}
+
+                      {isAnswering && (
+                        <div className="mt-2 space-y-2">
+                          <textarea
+                            value={liveAnswerText}
+                            onChange={(e) => setLiveAnswerText(e.target.value)}
+                            placeholder="Type doctor's advice or notes here..."
+                            rows={2}
+                            className="w-full p-2.5 rounded-xl bg-surface-container text-on-surface font-body-sm text-xs border border-primary/40 focus:outline-none"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveAnsweringId(null)}
+                              className="px-3 py-1 rounded-full text-xs bg-surface-container text-on-surface"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveLiveAnswer(q.id)}
+                              className="px-3 py-1 rounded-full text-xs bg-primary text-white font-semibold"
+                            >
+                              Save &amp; Mark Done
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Add Question Input */}
-          {userRole === 'parent' && (
-            <form onSubmit={handleAddQuestionSubmit} className="mt-4 flex gap-2">
-              <input
-                type="text"
-                placeholder="Ask about feeding, sleep, drops, skin..."
-                value={newQuestionText}
-                onChange={(e) => setNewQuestionText(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-xl text-xs bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] focus:outline-none focus:ring-1 focus:ring-[#E2765A]"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-[#E2765A] text-white text-xs font-semibold hover:bg-[#CB6145] transition-colors shrink-0"
-              >
-                Add
-              </button>
-            </form>
+                </div>
+              );
+            })
           )}
         </div>
+      </div>
 
-        {/* Symptoms & Temperature Log */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#FDF6E2] dark:bg-[#292416] flex items-center justify-center text-[#6E4D05] dark:text-[#EECD85]">
-                  <Thermometer className="w-4 h-4" />
+      {/* Symptoms & Clinical Observations Log */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary text-[20px]">healing</span>
+            <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+              Recent Symptoms &amp; Vitals History
+            </h3>
+          </div>
+          <span className="font-label-sm text-label-sm text-outline">
+            {symptoms.length} records
+          </span>
+        </div>
+
+        <div className="space-y-2.5">
+          {symptoms.length === 0 ? (
+            <div className="p-5 rounded-2xl bg-surface-container-lowest text-center text-on-surface-variant font-body-sm border border-outline-variant/30 text-xs">
+              No active symptoms recorded. Tap &quot;+ Symptom&quot; at the top to log fevers, rashes, or coughs.
+            </div>
+          ) : (
+            symptoms.map((s) => (
+              <div
+                key={s.id}
+                className="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-xs flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary font-bold text-sm shrink-0">
+                    🌡️
+                  </div>
+                  <div>
+                    <div className="font-label-md text-label-md text-on-surface font-bold flex items-center gap-2">
+                      <span>{s.symptom}</span>
+                      {s.temperatureC && (
+                        <span className="text-[11px] px-2 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold">
+                          {s.temperatureC}°C ({((s.temperatureC * 9) / 5 + 32).toFixed(1)}°F)
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-label-sm text-label-sm text-outline flex items-center gap-2 mt-0.5 text-xs">
+                      <span>{s.date}</span>
+                      {s.medicationGiven && (
+                        <>
+                          <span>•</span>
+                          <span>Med: {s.medicationGiven}</span>
+                        </>
+                      )}
+                      {s.notes && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate max-w-[150px]">{s.notes}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <h4 className="font-semibold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
-                  Symptom & Temperature Log
-                </h4>
               </div>
-              {userRole === 'parent' && (
-                <button
-                  onClick={() => setShowSymptomModal(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#E2765A] hover:text-[#CB6145]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Log Observation</span>
-                </button>
-              )}
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* WhatsApp Modal */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-3xl p-6 shadow-2xl border border-outline-variant/40 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[22px]">chat</span>
+                <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+                  WhatsApp Health Dossier
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowWhatsAppModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
             </div>
 
-            <p className="text-xs text-[#75706B] dark:text-[#9E9892] mb-4">
-              Track reactions following vaccines, temperature spikes, or skin observations.
-            </p>
+            <div className="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs font-mono whitespace-pre-wrap max-h-60 overflow-y-auto text-on-surface">
+              {generateWhatsAppMessage()}
+            </div>
 
-            {/* Symptoms list */}
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-              {symptoms.length === 0 ? (
-                <p className="text-xs text-[#75706B] italic text-center py-4">No symptoms recorded. Baby is thriving!</p>
-              ) : (
-                symptoms.map((s) => (
-                  <div
-                    key={s.id}
-                    className="p-3.5 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-xs space-y-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[#201E1D] dark:text-[#FAF8F5]">{s.symptom}</span>
-                      <span className="text-[10px] text-[#75706B] dark:text-[#9E9892]">{s.date}</span>
-                    </div>
-                    {s.temperatureC && (
-                      <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8A3510] dark:text-[#F8BCA0] bg-[#FFF0E6] dark:bg-[#2D2422] border border-[#FCDCCB] dark:border-[#543830] px-2 py-0.5 rounded-full">
-                        <Thermometer className="w-3 h-3 text-[#E2765A]" />
-                        <span>{s.temperatureC}°C</span>
-                      </div>
-                    )}
-                    {s.medicationGiven && (
-                      <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-                        Medication: <span className="font-semibold text-[#201E1D] dark:text-[#FAF8F5]">{s.medicationGiven}</span>
-                      </p>
-                    )}
-                    {s.notes && (
-                      <p className="text-[11px] text-[#75706B] italic">{s.notes}</p>
-                    )}
-                  </div>
-                ))
-              )}
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={handleCopyWhatsApp}
+                className="flex-1 h-12 rounded-full bg-surface-container text-on-surface font-label-md font-semibold flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {isCopied ? 'check' : 'content_copy'}
+                </span>
+                <span>{isCopied ? 'Copied to Clipboard!' : 'Copy Text'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenWhatsApp}
+                className="flex-1 h-12 rounded-full bg-[#25D366] text-white font-label-md font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-[18px]">send</span>
+                <span>Open in WhatsApp</span>
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-      </div>
-
-      {/* Symptom Modal */}
+      {/* Add Symptom Modal */}
       {showSymptomModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
-            {/* Drag indicator */}
-            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-3 sm:hidden" />
-            <h4 className="text-sm font-semibold text-[#201E1D] dark:text-[#FAF8F5] mb-2">
-              Log Symptom / Temperature
-            </h4>
-            <form onSubmit={handleSymptomSubmit} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-3xl p-6 shadow-2xl border border-outline-variant/40 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-surface-container">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary text-[22px]">healing</span>
+                <h3 className="font-headline-md text-headline-md text-on-surface font-bold">
+                  Log Symptom / Observation
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSymptomModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSymptomSubmit} className="space-y-4">
               <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Observation / Symptom</label>
+                <label className="font-label-sm text-label-sm text-outline block mb-1">Symptom Description</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Mild fever after 6-week vaccine, runny nose"
+                  placeholder="e.g. Mild fever, dry cough, diaper rash..."
                   value={symptomText}
                   onChange={(e) => setSymptomText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
+                  required
                 />
               </div>
 
-              <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Temperature in °C (Optional)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  inputMode="decimal"
-                  placeholder="37.5"
-                  value={tempC}
-                  onChange={(e) => setTempC(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-label-sm text-label-sm text-outline block mb-1">Temperature (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="37.8"
+                    value={tempC}
+                    onChange={(e) => setTempC(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm text-label-sm text-outline block mb-1">Medication Given</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Calpol 5.3 mL"
+                    value={medGiven}
+                    onChange={(e) => setMedGiven(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Medication Given (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Paracetamol drops 100mg/ml - 0.6ml"
-                  value={medGiven}
-                  onChange={(e) => setMedGiven(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#4D4845] dark:text-[#DDD8D0] mb-1 font-semibold">Doctor's Remark / Notes</label>
+                <label className="font-label-sm text-label-sm text-outline block mb-1">Doctor Notes / Context</label>
                 <textarea
                   rows={2}
-                  placeholder="Pediatrician phone advice..."
+                  placeholder="Appeared after morning walk; baby active and nursing normally..."
                   value={symptomNotes}
                   onChange={(e) => setSymptomNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] dark:bg-[#17161B] border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5]"
+                  className="w-full p-3 rounded-xl bg-surface-container-low text-on-surface font-body-sm border border-outline-variant/30 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="pt-2 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowSymptomModal(false)}
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold border border-[#EAE6DF] dark:border-[#2D2B33] text-[#4D4845] dark:text-[#DDD8D0] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] transition-colors duration-150"
+                  className="flex-1 h-12 rounded-full bg-surface-container text-on-surface font-label-lg font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-3 rounded-xl font-semibold bg-[#E2765A] hover:bg-[#CB6145] text-white transition-colors duration-150 active:scale-[0.98]"
+                  className="flex-1 h-12 rounded-full bg-primary text-on-primary font-label-lg font-bold shadow-md hover:bg-primary-container"
                 >
-                  Save Log
+                  Save Symptom
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* WhatsApp Message Generator Modal */}
-      {showWhatsAppModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#1C1A22] border border-[#EAE6DF] dark:border-[#2D2B33] rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            {/* Drag indicator */}
-            <div className="w-12 h-1 bg-[#EAE6DF] dark:bg-[#2D2B33] rounded-full mx-auto mb-2 sm:hidden" />
-
-            <div className="flex items-center justify-between pb-3 border-b border-[#EAE6DF] dark:border-[#2D2B33]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-[#201E1D] dark:text-[#FAF8F5]">
-                    WhatsApp Pediatrician Update
-                  </h3>
-                  <p className="text-[11px] text-[#75706B] dark:text-[#9E9892]">
-                    Structured medical snapshot ready to send to Dr. {profile.pediatricianName || 'Pediatrician'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowWhatsAppModal(false)}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#75706B] dark:text-[#9E9892]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Formatted Preview Box */}
-            <div className="relative">
-              <pre className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#141317] border border-[#EAE6DF] dark:border-[#2D2B33] text-[11px] text-[#201E1D] dark:text-[#FAF8F5] font-mono whitespace-pre-wrap max-h-60 overflow-y-auto no-scrollbar leading-relaxed">
-                {generateWhatsAppMessage()}
-              </pre>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={handleCopyWhatsApp}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] hover:bg-[#F2ECE3] dark:hover:bg-[#26242C] flex items-center justify-center gap-2 transition-colors duration-150"
-              >
-                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{isCopied ? 'Copied to Clipboard!' : 'Copy Text'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenWhatsApp}
-                className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Open in WhatsApp</span>
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

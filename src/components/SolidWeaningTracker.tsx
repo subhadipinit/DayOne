@@ -273,114 +273,139 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
-      {/* STITCH "NURTURING DAYLIGHT" 100 FOODS HERO BANNER */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="space-y-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-[#44634B] text-white shadow-xs">
-              <Utensils className="w-4 h-4" />
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold text-on-surface dark:text-[#FAF8F5]">
-              100 Foods Challenge & Solid Weaning
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-on-surface-variant dark:text-[#9E9892] max-w-xl">
-            Baby-led weaning, allergen exposure matrix, and age-wise nutrition for <strong>{profile.name}</strong>.
+      {/* Screen Title & Action Bar */}
+      <div className="flex items-start justify-between gap-3 pt-1">
+        <div className="flex flex-col min-w-0">
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold tracking-tight">
+            100 Foods Challenge
+          </h1>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            Baby Led Weaning • {profile.name} ({profile.dob ? `${Math.floor((Date.now() - new Date(profile.dob).getTime()) / (1000 * 60 * 60 * 24 * 30.4375))}m` : '6m+'})
           </p>
+        </div>
+        {userRole === 'parent' && (
+          <button
+            onClick={() => setShowAddCustomModal(true)}
+            className="shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-primary text-on-primary shadow-xs active:scale-95 transition-all font-semibold"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span className="font-label-lg text-label-lg">Try Food</span>
+          </button>
+        )}
+      </div>
 
-          <div className="flex items-center gap-2 flex-wrap pt-2">
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${badge.color}`}>
-              {badge.label}
-            </span>
-            <span className="px-2.5 py-1 rounded-full bg-[#EDF5EE] dark:bg-[#1F2B21] text-[#23522A] dark:text-[#ADCFB1] text-[11px] font-bold border border-[#CFE2D1] dark:border-[#2D4231] flex items-center gap-1">
-              <Check className="w-3 h-3 text-[#44634B]" />
-              <span>{lovedCount} Loved</span>
-            </span>
-            <span className="px-2.5 py-1 rounded-full bg-[#FFDBD0] dark:bg-[#3D251C] text-[#99462A] dark:text-[#FFB59E] text-[11px] font-bold border border-[#FCDCCB] dark:border-[#543830] flex items-center gap-1">
-              <Heart className="w-3 h-3 text-[#D97757]" />
-              <span>6 Top Allergens Monitored</span>
-            </span>
+      {/* Challenge Progress Hero Card (Direct from Stitch Mockup) */}
+      <div className="relative w-full rounded-3xl bg-surface-container-lowest p-5 shadow-[0_4px_20px_-2px_rgba(45,49,46,0.05)] border border-outline-variant/30 overflow-hidden">
+        {/* Ambient organic blush pattern */}
+        <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-primary-fixed/25 blur-2xl pointer-events-none"></div>
+        <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-secondary-fixed/35 blur-2xl pointer-events-none"></div>
+
+        <div className="relative flex items-center justify-between gap-4">
+          {/* Radial Gauge with Badge inside */}
+          <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+            <svg aria-hidden="true" className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" fill="transparent" r="40" stroke="#f1f4f0" strokeWidth="8"></circle>
+              <circle
+                cx="50"
+                cy="50"
+                fill="transparent"
+                r="40"
+                stroke="#44634b"
+                strokeDasharray="251.2"
+                strokeDashoffset={251.2 - (251.2 * progressPercent) / 100}
+                strokeLinecap="round"
+                strokeWidth="8"
+                className="transition-all duration-700 ease-out"
+              ></circle>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="font-headline-md text-headline-md font-bold text-on-surface leading-none">
+                {introducedFoods.length}
+              </span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">/ 100</span>
+            </div>
+          </div>
+
+          {/* Text details & milestone */}
+          <div className="flex-1 min-w-0">
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant mb-1.5 shadow-xs">
+              <span className="material-symbols-outlined text-[15px]">eco</span>
+              <span className="font-label-sm text-label-sm font-semibold">{badge.label}</span>
+            </div>
+            <p className="font-headline-md text-headline-md text-on-surface font-bold leading-tight">
+              {introducedFoods.length} Foods Explored
+            </p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              {100 - introducedFoods.length} fresh bites left to reach baby&apos;s 1st birthday milestone!
+            </p>
           </div>
         </div>
 
-        {/* Circular Radial Progress Meter (Direct from Stitch Mockup) */}
-        <div className="bg-[#FAF8F5] dark:bg-[#17161B] p-4 rounded-2xl border border-[#EAE6DF] dark:border-[#2D2B33] shadow-xs flex items-center gap-4 shrink-0">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-              <path
-                className="text-[#EAE6DF] dark:text-[#2D2B33]"
-                strokeWidth="3.5"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path
-                className="text-[#44634B] dark:text-[#ADCFB1] transition-all duration-700 ease-out"
-                strokeDasharray={`${progressPercent}, 100`}
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                stroke="currentColor"
-                fill="none"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-            <div className="absolute text-center">
-              <span className="text-sm font-black text-on-surface dark:text-[#FAF8F5] block font-mono leading-none">
-                {introducedFoods.length}
-              </span>
-              <span className="text-[9px] font-bold text-[#75706B] dark:text-[#9E9892]">
-                / 100
-              </span>
+        {/* Stat Pills Row */}
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-surface-variant/40">
+          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
+            <div className="flex items-center gap-1 text-primary">
+              <span className="material-symbols-outlined text-[16px]">verified_user</span>
+              <span className="font-label-lg text-label-lg font-bold">6</span>
             </div>
+            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Allergens Ok</span>
           </div>
 
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-on-surface dark:text-[#FAF8F5]">
-              {progressPercent}% Explored
+          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
+            <div className="flex items-center gap-1 text-secondary">
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                favorite
+              </span>
+              <span className="font-label-lg text-label-lg font-bold">{lovedCount}</span>
             </div>
-            <div className="text-[11px] text-[#44634B] dark:text-[#ADCFB1] font-semibold">
-              {100 - introducedFoods.length} foods remaining
+            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Loved</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-surface-container-low text-center">
+            <div className="flex items-center gap-1 text-tertiary">
+              <span className="material-symbols-outlined text-[16px]">replay</span>
+              <span className="font-label-lg text-label-lg font-bold">{toleratedCount + dislikedCount}</span>
             </div>
+            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Retrials</span>
           </div>
         </div>
       </div>
 
       {/* Safety Quick Tip Card (Direct from Stitch Mockup) */}
-      <div className="p-4 rounded-2xl bg-[#FDF6E2] dark:bg-[#2A2318] border border-[#F6E6B8] dark:border-[#4B3C23] flex items-start gap-3 shadow-xs">
-        <div className="w-8 h-8 rounded-full bg-[#FFDDAE] dark:bg-[#4B3C23] text-[#7C5400] dark:text-[#F8BC58] flex items-center justify-center shrink-0">
-          <ShieldAlert className="w-4 h-4" />
+      <div className="rounded-2xl bg-tertiary-fixed/30 p-4 border border-tertiary-fixed/40 flex items-start gap-3 shadow-xs">
+        <div className="w-9 h-9 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
+          <span className="material-symbols-outlined text-[20px]">health_and_safety</span>
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-xs font-bold text-[#6E4D05] dark:text-[#F8BC58]">
+          <h4 className="font-label-lg text-label-lg font-bold text-on-surface">
             Pediatric Safety Note: Gagging vs Choking
           </h4>
-          <p className="text-xs text-[#7C5400] dark:text-[#DDD8D0] mt-0.5 leading-relaxed">
-            Gagging is a normal, noisy, protective throat reflex as baby learns oral motor control. Choking is silent. Always serve soft, finger-length spears and supervise meals upright.
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-relaxed text-xs">
+            Gagging is a normal, noisy throat reflex as baby learns tongue control. Choking is silent. Always serve soft, finger-length spears and seat baby upright.
           </p>
         </div>
       </div>
 
-      {/* TOP NAVIGATION TABS */}
-      <div className="flex items-center gap-2 border-b border-[#EAE6DF] dark:border-[#2D2B33] pb-2 overflow-x-auto no-scrollbar">
+      {/* Segmented Navigation Sub-Tabs (Direct from Stitch Mockup) */}
+      <div className="w-full p-1 rounded-full bg-surface-container flex items-center gap-1 overflow-x-auto no-scrollbar">
         {[
-          { id: 'diary' as WeaningTab, label: '🥑 100 Foods Grid', desc: `${introducedFoods.length}/100 Explored` },
-          { id: 'chart' as WeaningTab, label: '🥣 Age-Wise Stages', desc: 'Stage 1 to 5 (6–12+ M)' },
-          { id: 'recipes' as WeaningTab, label: '📖 Tested Recipes', desc: '16+ Step-by-Step' },
-          { id: 'safety' as WeaningTab, label: '🛡️ Safety & Allergens', desc: 'Gagging vs Choking' },
+          { id: 'diary' as WeaningTab, label: '100 Foods Grid' },
+          { id: 'chart' as WeaningTab, label: 'Age-Wise Stages' },
+          { id: 'recipes' as WeaningTab, label: 'Tested Recipes' },
+          { id: 'safety' as WeaningTab, label: 'Gag vs Choke' },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex flex-col items-start gap-0.5 ${
+            className={`flex-1 min-w-[95px] py-2 px-3 rounded-full font-label-md text-label-md text-center transition-all font-semibold ${
               activeTab === tab.id
-                ? 'bg-[#44634B] text-white shadow-xs'
-                : 'bg-white dark:bg-[#1D1C22] border border-[#EAE6DF] dark:border-[#2D2B33] text-on-surface-variant dark:text-[#9E9892] hover:bg-black/5 dark:hover:bg-white/5'
+                ? 'bg-surface-container-lowest text-on-surface shadow-xs font-bold'
+                : 'text-on-surface-variant hover:text-on-surface'
             }`}
+            type="button"
           >
-            <span>{tab.label}</span>
-            <span className={`text-[10px] font-normal opacity-85 ${activeTab === tab.id ? 'text-emerald-100' : 'text-[#75706B]'}`}>
-              {tab.desc}
-            </span>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -824,90 +849,84 @@ export const SolidWeaningTracker: React.FC<SolidWeaningTrackerProps> = ({
             </div>
           </div>
 
-          {/* Foods Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Foods Grid (Direct from Stitch 2-Column/3-Column Bento Mockup) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {filteredFoods.map((food) => {
               const isIntroduced = (food.timesOffered || 0) > 0 || !!food.isIntroduced;
+              const foodEmoji = food.category === 'fruit' ? '🍎' : food.category === 'vegetable' ? '🥦' : food.category === 'grain' ? '🌾' : food.category === 'dairy' ? '🥣' : food.isAllergen ? '🥜' : '🥑';
 
               return (
                 <div
                   key={food.id}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                  className={`flex flex-col justify-between rounded-3xl p-3.5 shadow-[0_4px_16px_-2px_rgba(45,49,46,0.04)] border transition-all ${
                     isIntroduced
                       ? food.reaction === 'loved'
-                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
+                        ? 'bg-surface-container-lowest border-primary/30 ring-1 ring-primary/20'
                         : food.reaction === 'allergic'
-                        ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800/40'
-                        : 'bg-white dark:bg-[#1D1C22] border-[#EAE6DF] dark:border-[#2D2B33]'
-                      : 'bg-[#FAF8F5] dark:bg-[#17161B] border-dashed border-[#EAE6DF] dark:border-[#2D2B33] opacity-80'
+                        ? 'bg-surface-container-lowest border-error/40'
+                        : 'bg-surface-container-lowest border-outline-variant/30'
+                      : 'bg-surface-container-low/60 border-dashed border-outline-variant/40'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-[#75706B] dark:text-[#9E9892]">
-                          {food.category}
-                        </span>
-                        {food.isIronRich && (
-                          <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
-                            Iron
-                          </span>
-                        )}
-                        {food.isAllergen && (
-                          <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                            Allergen
-                          </span>
-                        )}
+                  <div>
+                    <div className="flex items-start justify-between gap-1 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-lg shrink-0">
+                        {foodEmoji}
                       </div>
-                      <h4 className="text-xs font-bold text-[#201E1D] dark:text-[#FAF8F5] mt-0.5">
-                        {food.name}
-                      </h4>
+
+                      {isIntroduced ? (
+                        <span
+                          className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            food.reaction === 'loved'
+                              ? 'bg-primary-fixed text-on-primary-fixed-variant'
+                              : food.reaction === 'allergic'
+                              ? 'bg-error-container text-on-error-container'
+                              : food.reaction === 'disliked'
+                              ? 'bg-tertiary-fixed text-on-tertiary-fixed'
+                              : 'bg-surface-container-high text-on-surface'
+                          }`}
+                        >
+                          {food.reaction === 'loved' && 'Loved 💚'}
+                          {food.reaction === 'neutral' && 'Liked 🙂'}
+                          {food.reaction === 'disliked' && 'Grimace 😋'}
+                          {food.reaction === 'allergic' && 'Reaction ⚠️'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-container text-outline font-medium">
+                          New
+                        </span>
+                      )}
                     </div>
 
-                    {isIntroduced ? (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
-                          food.reaction === 'loved'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                            : food.reaction === 'disliked'
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                            : food.reaction === 'allergic'
-                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                        }`}
-                      >
-                        {food.reaction === 'loved' && '❤️ Loved'}
-                        {food.reaction === 'neutral' && '🙂 Tolerated'}
-                        {food.reaction === 'disliked' && '😕 Disliked'}
-                        {food.reaction === 'allergic' && '⚠️ Reaction'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-medium text-[#75706B] dark:text-[#9E9892]">
-                        Not yet offered
-                      </span>
-                    )}
+                    <h4 className="font-headline-md text-sm font-bold text-on-surface truncate">
+                      {food.name}
+                    </h4>
+                    <p className="font-body-sm text-xs text-on-surface-variant truncate mt-0.5">
+                      {food.category} {food.isIronRich ? '• Iron rich' : ''} {food.isAllergen ? '• Allergen' : ''}
+                    </p>
                   </div>
 
-                  {isIntroduced && (
-                    <div className="text-[10px] text-[#75706B] dark:text-[#9E9892] flex items-center justify-between pt-1 border-t border-black/5 dark:border-white/5">
-                      <span>Offered {food.timesOffered || 1} {(food.timesOffered || 1) === 1 ? 'time' : 'times'}</span>
-                      <span>{food.firstOfferedDate ? `First: ${food.firstOfferedDate}` : 'Recorded'}</span>
-                    </div>
-                  )}
+                  <div className="mt-3 pt-2 border-t border-surface-variant/30 flex items-center justify-between text-on-surface-variant font-label-sm text-xs">
+                    <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                      <span className="material-symbols-outlined text-[14px]">
+                        {isIntroduced ? 'check_circle' : 'schedule'}
+                      </span>
+                      <span>{isIntroduced ? `Tried ${food.timesOffered || 1}x` : 'Not offered'}</span>
+                    </span>
 
-                  {/* Quick Action Button */}
-                  {userRole === 'parent' && (
-                    <button
-                      onClick={() => setSelectedFoodForReaction(food)}
-                      className={`w-full py-1.5 rounded-xl font-semibold text-xs border transition-colors ${
-                        isIntroduced
-                          ? 'border-[#EAE6DF] dark:border-[#2D2B33] text-[#201E1D] dark:text-[#FAF8F5] hover:bg-black/5 dark:hover:bg-white/5'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
-                      }`}
-                    >
-                      {isIntroduced ? 'Update Reaction' : 'Mark as Offered'}
-                    </button>
-                  )}
+                    {userRole === 'parent' && (
+                      <button
+                        onClick={() => setSelectedFoodForReaction(food)}
+                        className="text-on-surface-variant hover:text-primary transition-colors"
+                        type="button"
+                        aria-label={`Log food ${food.name}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {isIntroduced ? 'edit' : 'add_circle'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
